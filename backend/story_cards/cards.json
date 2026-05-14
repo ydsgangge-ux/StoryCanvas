@@ -1,0 +1,2930 @@
+{
+  "A1": {
+    "name": "英雄征途",
+    "category": "A",
+    "description": "经典英雄旅程，从平凡到非凡的成长之路",
+    "reference_works": [
+      "斗破苍穹",
+      "龙与地下城"
+    ],
+    "compatible_styles": [
+      "线性叙事",
+      "热血燃向"
+    ],
+    "difficulty": "beginner",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 150,
+            "y": 200
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "出发场景",
+            "scene_goal": "主角踏上旅程的起点"
+          }
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "第一道门槛",
+            "scene_goal": "主角面对第一个重大挑战"
+          }
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 1000,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "最终决战",
+            "scene_goal": "故事的高潮对决"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 150,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 600,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 850,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "角色目标"
+      },
+      {
+        "from_type": "SCENE",
+        "to_type": "SCENE",
+        "conn_type": "follows",
+        "label": "顺序推进"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "SCENE": 0.35,
+      "GOAL": 0.15,
+      "CONFLICT": 0.1,
+      "TURNING_POINT": 0.1
+    },
+    "writing_prompt_modifier": "这是经典英雄征途叙事。AI写作时注意：1)展现主角的成长弧线 2)每个挑战让主角更接近目标 3)保持热血积极基调"
+  },
+  "A3": {
+    "name": "夺权争位",
+    "category": "A",
+    "description": "多方势力角逐权力巅峰，权谋与政治交织的史诗叙事",
+    "reference_works": [
+      "冰与火之歌",
+      "庆余年"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "道德灰度"
+    ],
+    "difficulty": "advanced",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "势力A"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "势力B"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "FACTION_RELATION",
+          "canvas": {
+            "x": 100,
+            "y": 500
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 1000,
+            "y": 100
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "FACTION",
+        "conn_type": "contains",
+        "label": "属于"
+      },
+      {
+        "from_type": "FACTION",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "引发冲突"
+      }
+    ],
+    "progress_weights": {
+      "FACTION": 0.25,
+      "CHARACTER": 0.2,
+      "CONFLICT": 0.2,
+      "FACTION_RELATION": 0.15,
+      "TURNING_POINT": 0.2
+    },
+    "writing_prompt_modifier": "这是权力斗争叙事。AI写作时注意：1)每个角色都有自己的政治考量 2)表面言行与真实意图分开 3)保持道德灰度，不做简单的善恶二分"
+  },
+  "B1": {
+    "name": "双人成长",
+    "category": "B",
+    "description": "两个人彼此成就、共同成长的情感叙事",
+    "reference_works": [
+      "千与千寻",
+      "怦然心动"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "极简风格"
+    ],
+    "difficulty": "beginner",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "主角A"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "主角B"
+          }
+        },
+        {
+          "type": "RELATIONSHIP",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "RELATIONSHIP",
+        "conn_type": "contains",
+        "label": "关系"
+      },
+      {
+        "from_type": "RELATIONSHIP",
+        "to_type": "GOAL",
+        "conn_type": "influences",
+        "label": "影响目标"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "RELATIONSHIP": 0.3,
+      "GOAL": 0.2,
+      "GROWTH": 0.2
+    },
+    "writing_prompt_modifier": "这是双人成长叙事。AI写作时注意：1)平衡两个人的视角 2)关系变化是核心驱动力 3)体现彼此如何改变对方"
+  },
+  "C1": {
+    "name": "悬疑推理",
+    "category": "C",
+    "description": "层层递进的谜题解开过程，读者与侦探同步推理",
+    "reference_works": [
+      "名侦探柯南",
+      "利刃出鞘"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "difficulty": "intermediate",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "侦探/解谜者"
+          }
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {
+            "hook_type": "mystery",
+            "title": "核心谜题"
+          }
+        },
+        {
+          "type": "EVENT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "真相揭露",
+            "event_type": "revelation"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FORESHADOW",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SURPRISE",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "HOOK",
+        "to_type": "FORESHADOW",
+        "conn_type": "foreshadows",
+        "label": "线索"
+      },
+      {
+        "from_type": "FORESHADOW",
+        "to_type": "EVENT",
+        "conn_type": "resolves",
+        "label": "回收"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.2,
+      "HOOK": 0.3,
+      "EVENT": 0.2,
+      "FORESHADOW": 0.2,
+      "SURPRISE": 0.1
+    },
+    "writing_prompt_modifier": "这是悬疑推理叙事。AI写作时注意：1)所有线索必须在前文有铺垫 2)角色信息边界严格 3)读者应与侦探获得相同信息量 4)最终揭秘要令人信服"
+  },
+  "C4": {
+    "name": "世界谎言",
+    "category": "C",
+    "description": "世界的表面是谎言，主角逐步发现隐藏的真相",
+    "reference_works": [
+      "黑客帝国",
+      "进击的巨人"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "difficulty": "advanced",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "探索者"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 100,
+            "y": 350
+          },
+          "content_defaults": {
+            "world_name": "表世界"
+          }
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 500,
+            "y": 100
+          },
+          "content_defaults": {
+            "hook_type": "mystery",
+            "title": "世界背后的秘密"
+          }
+        },
+        {
+          "type": "OMNISCIENT_LAYER",
+          "canvas": {
+            "x": 100,
+            "y": 550
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FORESHADOW",
+          "canvas": {
+            "x": 800,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "INFORMATION_BOUNDARY",
+          "canvas": {
+            "x": 500,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "OMNISCIENT_LAYER",
+        "to_type": "WORLDVIEW",
+        "conn_type": "contains",
+        "label": "隐藏真相"
+      },
+      {
+        "from_type": "CHARACTER",
+        "to_type": "HOOK",
+        "conn_type": "influences",
+        "label": "探索"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.15,
+      "WORLDVIEW": 0.2,
+      "HOOK": 0.2,
+      "OMNISCIENT_LAYER": 0.25,
+      "FORESHADOW": 0.1,
+      "INFORMATION_BOUNDARY": 0.1
+    },
+    "writing_prompt_modifier": "这是世界谎言叙事。AI写作时注意：1)表世界的信息是假的 2)角色逐步发现真相 3)全知层控制信息释放节奏 4)读者和主角同步发现真相"
+  },
+  "D3": {
+    "name": "异世界适应",
+    "category": "D",
+    "description": "主角进入异世界，逐步适应和理解新世界规则",
+    "reference_works": [
+      "从零开始的异世界生活",
+      "转生史莱姆"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "difficulty": "beginner",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "穿越者"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {
+            "world_name": "异世界"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "RULE_CONSTRAINT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "WORLDVIEW": 0.3,
+      "RULE_CONSTRAINT": 0.2,
+      "GOAL": 0.2
+    },
+    "writing_prompt_modifier": "这是异世界适应叙事。AI写作时注意：1)保持主角对异世界的好奇和陌生感 2)逐步揭示世界规则 3)主角利用现代知识解决异世界问题"
+  },
+  "E1": {
+    "name": "废柴逆袭",
+    "category": "E",
+    "description": "从弱小到强大，用努力和天赋打破命运的枷锁",
+    "reference_works": [
+      "火影忍者",
+      "我的英雄学院"
+    ],
+    "compatible_styles": [
+      "线性顺叙",
+      "热血燃向"
+    ],
+    "difficulty": "beginner",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "逆袭者",
+            "role_archetype": "Protagonist"
+          }
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "逆袭时刻"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GOAL": 0.2,
+      "SCENE": 0.2,
+      "GROWTH": 0.15,
+      "CONFLICT": 0.15
+    },
+    "writing_prompt_modifier": "这是废柴逆袭叙事。AI写作时注意：1)展现主角的成长曲线 2)逆袭要有合理铺垫 3)保持热血励志基调"
+  },
+  "F4": {
+    "name": "多线织网",
+    "category": "F",
+    "description": "多条时间线并行，角色信息不对称，读者掌握超越角色的视角",
+    "reference_works": [
+      "从零开始的异世界生活",
+      "云图"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "交叉叙事",
+      "厚重史诗"
+    ],
+    "difficulty": "advanced",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "OMNISCIENT_LAYER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "timeline_name": "主时间线",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 500
+          },
+          "content_defaults": {
+            "timeline_name": "支线/分叉线",
+            "timeline_type": "branch"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 500,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "关键角色"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "INFORMATION_BOUNDARY",
+          "canvas": {
+            "x": 500,
+            "y": 500
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "READER_EMOTION_CURVE",
+          "canvas": {
+            "x": 800,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 800,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 800,
+            "y": 500
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "OMNISCIENT_LAYER",
+        "to_type": "TIMELINE",
+        "conn_type": "contains",
+        "label": "包含"
+      },
+      {
+        "from_type": "TIMELINE",
+        "to_type": "CHARACTER",
+        "conn_type": "contains",
+        "label": "包含角色"
+      }
+    ],
+    "progress_weights": {
+      "OMNISCIENT_LAYER": 0.2,
+      "TIMELINE": 0.15,
+      "CHARACTER": 0.15,
+      "INFORMATION_BOUNDARY": 0.15,
+      "SCENE": 0.15,
+      "HOOK": 0.1,
+      "TURNING_POINT": 0.1
+    },
+    "writing_prompt_modifier": "这是多线叙事作品。AI写作时必须：1)维护信息边界，角色只知道自己经历的 2)标注当前所在时间线 3)注意读者视角超越角色视角产生的戏剧张力"
+  },
+  "F1": {
+    "name": "文明冲突",
+    "category": "F",
+    "description": "不同文明/种族之间的碰撞、战争与融合",
+    "reference_works": [
+      "三体",
+      "魔兽世界"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗",
+      "道德灰度"
+    ],
+    "difficulty": "expert",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "文明A"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "文明B"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {
+            "title": "两大文明的冲突"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "FACTION_RELATION",
+          "canvas": {
+            "x": 400,
+            "y": 500
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 1000,
+            "y": 100
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "progress_weights": {
+      "FACTION": 0.25,
+      "WORLDVIEW": 0.2,
+      "CONFLICT": 0.2,
+      "CHARACTER": 0.15,
+      "FACTION_RELATION": 0.1,
+      "TURNING_POINT": 0.1
+    },
+    "writing_prompt_modifier": "这是文明冲突叙事。AI写作时注意：1)不偏袒任何一方 2)展现两种文明的内在逻辑 3)冲突背后的深层原因比表面更重要"
+  },
+  "G1": {
+    "name": "套层叙事",
+    "category": "G",
+    "description": "故事中有故事，多层叙事结构交织",
+    "reference_works": [
+      "一千零一夜",
+      "云图"
+    ],
+    "compatible_styles": [
+      "非线性碎片",
+      "交叉叙事"
+    ],
+    "difficulty": "expert",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "timeline_name": "外层框架",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "timeline_name": "内层故事",
+            "timeline_type": "branch"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 500,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "说书人/框架角色"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "THEME_STATEMENT",
+          "canvas": {
+            "x": 500,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 800,
+            "y": 100
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "progress_weights": {
+      "TIMELINE": 0.25,
+      "CHARACTER": 0.2,
+      "THEME_STATEMENT": 0.2,
+      "TURNING_POINT": 0.15
+    },
+    "writing_prompt_modifier": "这是套层叙事。AI写作时注意：1)内外层故事主题要呼应 2)切换层时明确标注 3)内外层的角色可以有隐喻性对应"
+  },
+  "F3": {
+    "name": "神话重述",
+    "category": "F",
+    "description": "以现代视角重新诠释经典神话传说",
+    "reference_works": [
+      "封神演义新解",
+      "弥尔顿失乐园"
+    ],
+    "compatible_styles": [
+      "厚重史诗",
+      "多视角轮换"
+    ],
+    "difficulty": "expert",
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "world_name": "神话世界"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "神话角色"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "神系/阵营"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "RULE_CONSTRAINT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "THEME_STATEMENT",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "progress_weights": {
+      "WORLDVIEW": 0.25,
+      "CHARACTER": 0.2,
+      "FACTION": 0.2,
+      "CONFLICT": 0.15,
+      "RULE_CONSTRAINT": 0.1,
+      "THEME_STATEMENT": 0.1
+    },
+    "writing_prompt_modifier": "这是神话重述叙事。AI写作时注意：1)尊重原始神话框架 2)赋予传统角色新的动机和深度 3)史诗感和仪式感贯穿始终"
+  },
+  "A2": {
+    "name": "复仇叙事",
+    "category": "A",
+    "difficulty": "intermediate",
+    "description": "主角遭受不公后精心策划复仇，层层递进的报复行动",
+    "reference_works": [
+      "基督山伯爵"
+    ],
+    "compatible_styles": [
+      "线性叙事",
+      "道德灰度"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "复仇者"
+          }
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "title": "复仇时刻",
+            "scene_goal": "主角实施复仇的关键场景"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 100,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "复仇目标"
+      },
+      {
+        "from_type": "SCENE",
+        "to_type": "TURNING_POINT",
+        "conn_type": "causes",
+        "label": "导致转折"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "SCENE": 0.3,
+      "GOAL": 0.2,
+      "TURNING_POINT": 0.2
+    },
+    "writing_prompt_modifier": "这是复仇叙事。AI写作时注意：1)复仇动机要有充分铺垫 2)展现复仇过程的代价 3)保持道德灰度，不简单站队"
+  },
+  "A4": {
+    "name": "拯救任务",
+    "category": "A",
+    "difficulty": "beginner",
+    "description": "主角团队为拯救某目标而展开的冒险行动",
+    "reference_works": [
+      "速度与激情",
+      "虎胆龙威"
+    ],
+    "compatible_styles": [
+      "线性顺叙",
+      "热血燃向"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "拯救者"
+          }
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "title": "救援目标",
+            "scene_goal": "核心救援行动场景"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 100,
+            "y": 400
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "团队目标"
+      },
+      {
+        "from_type": "SCENE",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "制造障碍"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "SCENE": 0.3,
+      "CONFLICT": 0.2,
+      "GOAL": 0.2
+    },
+    "writing_prompt_modifier": "这是拯救任务叙事。AI写作时注意：1)保持紧迫感 2)团队协作和牺牲精神 3)紧张刺激的动作场面"
+  },
+  "A5": {
+    "name": "逆天改命",
+    "category": "A",
+    "difficulty": "beginner",
+    "description": "主角与命运抗争，凭借努力和天赋打破枷锁",
+    "reference_works": [
+      "斗罗大陆",
+      "遮天"
+    ],
+    "compatible_styles": [
+      "线性顺叙",
+      "热血燃向"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "逆天者"
+          }
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 100,
+            "y": 400
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "抗争目标"
+      },
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GROWTH",
+        "conn_type": "contains",
+        "label": "成长弧线"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GOAL": 0.25,
+      "GROWTH": 0.25,
+      "CONFLICT": 0.2
+    },
+    "writing_prompt_modifier": "这是逆天改命叙事。AI写作时注意：1)主角的成长要有合理铺垫 2)每次突破都要付出代价 3)保持热血基调"
+  },
+  "B2": {
+    "name": "三角张力",
+    "category": "B",
+    "difficulty": "intermediate",
+    "description": "三人之间的情感纠葛与关系博弈",
+    "reference_works": [
+      "暮光之城",
+      "绯闻女孩"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "主角"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "关系对象A"
+          }
+        },
+        {
+          "type": "RELATIONSHIP",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "RELATIONSHIP",
+        "conn_type": "contains",
+        "label": "关系"
+      },
+      {
+        "from_type": "RELATIONSHIP",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "关系冲突"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "RELATIONSHIP": 0.4,
+      "CONFLICT": 0.3
+    },
+    "writing_prompt_modifier": "这是三角张力叙事。AI写作时注意：1)平衡三个角色的视角 2)情感冲突要细腻 3)每个角色都有自己的合理动机"
+  },
+  "B3": {
+    "name": "家族史诗",
+    "category": "B",
+    "difficulty": "advanced",
+    "description": "跨越数代的家族兴衰史，血脉与命运的纠缠",
+    "reference_works": [
+      "百年孤独",
+      "大河之剑"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "家族成员A"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "家族成员B"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "家族"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "RELATIONSHIP",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "FACTION",
+        "conn_type": "contains",
+        "label": "属于家族"
+      },
+      {
+        "from_type": "CHARACTER",
+        "to_type": "RELATIONSHIP",
+        "conn_type": "influences",
+        "label": "关系纽带"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.25,
+      "FACTION": 0.25,
+      "RELATIONSHIP": 0.25,
+      "TIMELINE": 0.25
+    },
+    "writing_prompt_modifier": "这是家族史诗叙事。AI写作时注意：1)跨越代际的叙事要连贯 2)家族命运是核心驱动力 3)每代人都有自己的主题"
+  },
+  "B4": {
+    "name": "群像叙事",
+    "category": "B",
+    "difficulty": "advanced",
+    "description": "多个角色群像交织，每个人的故事都是整体的拼图",
+    "reference_works": [
+      "请回答1988",
+      "火影忍者"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "群像角色A"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "群像角色B"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 500
+          },
+          "content_defaults": {
+            "name": "群像角色C"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "RELATIONSHIP",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "RELATIONSHIP",
+        "conn_type": "contains",
+        "label": "关系网络"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.4,
+      "RELATIONSHIP": 0.3,
+      "SCENE": 0.3
+    },
+    "writing_prompt_modifier": "这是群像叙事。AI写作时注意：1)每个角色都有独立的故事线 2)多条线在关键点交织 3)保持视角平衡"
+  },
+  "B5": {
+    "name": "文明对话",
+    "category": "B",
+    "difficulty": "expert",
+    "description": "不同文明之间的接触、碰撞与理解",
+    "reference_works": [
+      "魔兽世界人兽战争",
+      "阿凡达"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗",
+      "道德灰度"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "文明A"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "文明B"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "FACTION_RELATION",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "FACTION",
+        "to_type": "FACTION_RELATION",
+        "conn_type": "contains",
+        "label": "关系"
+      }
+    ],
+    "progress_weights": {
+      "FACTION": 0.3,
+      "CHARACTER": 0.2,
+      "CONFLICT": 0.25,
+      "FACTION_RELATION": 0.25
+    },
+    "writing_prompt_modifier": "这是文明对话叙事。AI写作时注意：1)不偏袒任何一方 2)展现两种文明的内在逻辑 3)对话而非简单对立"
+  },
+  "C2": {
+    "name": "身份揭露",
+    "category": "C",
+    "difficulty": "intermediate",
+    "description": "角色隐藏的真实身份逐步被揭开",
+    "reference_works": [
+      "搏击俱乐部",
+      "通天塔"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "隐藏身份者"
+          }
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "hook_type": "mystery",
+            "title": "真实身份之谜"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FORESHADOW",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SURPRISE",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "HOOK",
+        "to_type": "FORESHADOW",
+        "conn_type": "foreshadows",
+        "label": "身份线索"
+      },
+      {
+        "from_type": "FORESHADOW",
+        "to_type": "SURPRISE",
+        "conn_type": "resolves",
+        "label": "揭露"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.2,
+      "HOOK": 0.3,
+      "FORESHADOW": 0.25,
+      "SURPRISE": 0.25
+    },
+    "writing_prompt_modifier": "这是身份揭露叙事。AI写作时注意：1)线索要公平地放在读者面前 2)揭露要令人信服 3)保持信息边界的严格"
+  },
+  "C3": {
+    "name": "历史真相",
+    "category": "C",
+    "difficulty": "advanced",
+    "description": "被掩埋的历史真相逐步被发现，改写当下的认知",
+    "reference_works": [
+      "魔兽世界旧神线",
+      "权游龙石岛"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "world_name": "表世界认知"
+          }
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {
+            "hook_type": "mystery",
+            "title": "历史的真相"
+          }
+        },
+        {
+          "type": "OMNISCIENT_LAYER",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FORESHADOW",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "OMNISCIENT_LAYER",
+        "to_type": "WORLDVIEW",
+        "conn_type": "contains",
+        "label": "隐藏历史"
+      }
+    ],
+    "progress_weights": {
+      "WORLDVIEW": 0.2,
+      "HOOK": 0.2,
+      "OMNISCIENT_LAYER": 0.25,
+      "FORESHADOW": 0.2,
+      "TIMELINE": 0.15
+    },
+    "writing_prompt_modifier": "这是历史真相叙事。AI写作时注意：1)历史信息的释放要控制节奏 2)新发现的历史要改变表世界的理解 3)全知层严格管理信息释放"
+  },
+  "C5": {
+    "name": "神话考古",
+    "category": "C",
+    "difficulty": "expert",
+    "description": "在现实世界中发现神话传说的真实源头",
+    "reference_works": [
+      "魔兽世界泰坦神话",
+      "封神演义"
+    ],
+    "compatible_styles": [
+      "厚重史诗",
+      "揭秘驱动"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "world_name": "神话世界"
+          }
+        },
+        {
+          "type": "OMNISCIENT_LAYER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "考古者/探索者"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FORESHADOW",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "OMNISCIENT_LAYER",
+        "to_type": "WORLDVIEW",
+        "conn_type": "contains",
+        "label": "神话真相"
+      }
+    ],
+    "progress_weights": {
+      "WORLDVIEW": 0.25,
+      "OMNISCIENT_LAYER": 0.25,
+      "CHARACTER": 0.2,
+      "FORESHADOW": 0.15,
+      "HOOK": 0.15
+    },
+    "writing_prompt_modifier": "这是神话考古叙事。AI写作时注意：1)发现过程要层层递进 2)现代视角理解神话 3)保持神秘感和史诗感"
+  },
+  "D1": {
+    "name": "末日求存",
+    "category": "D",
+    "difficulty": "intermediate",
+    "description": "末日环境下人类的求生挣扎与人性考验",
+    "reference_works": [
+      "行尸走肉",
+      "釜山行"
+    ],
+    "compatible_styles": [
+      "线性叙事",
+      "冷峻克制"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "幸存者"
+          }
+        },
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "title": "末日场景",
+            "scene_goal": "展现末日世界的严酷"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 100,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "生存目标"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "SCENE": 0.3,
+      "GOAL": 0.2,
+      "CONFLICT": 0.2
+    },
+    "writing_prompt_modifier": "这是末日求存叙事。AI写作时注意：1)展现人性在极端环境下的抉择 2)保持紧张感 3)资源稀缺带来的道德困境"
+  },
+  "D2": {
+    "name": "系统压迫",
+    "category": "D",
+    "difficulty": "advanced",
+    "description": "在不公正的社会系统中挣扎求存，反抗压迫",
+    "reference_works": [
+      "饥饿游戏",
+      "1984"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "冷峻克制"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "反抗者"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "压迫系统"
+          }
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 800,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 800,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "FACTION",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "系统压迫"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.25,
+      "FACTION": 0.2,
+      "CONFLICT": 0.25,
+      "GOAL": 0.15,
+      "TURNING_POINT": 0.15
+    },
+    "writing_prompt_modifier": "这是系统压迫叙事。AI写作时注意：1)系统的压迫要有细节支撑 2)反抗要付出真实代价 3)保持冷峻克制的基调"
+  },
+  "D4": {
+    "name": "游戏规则",
+    "category": "D",
+    "difficulty": "intermediate",
+    "description": "在残酷的游戏或竞赛中求生存，规则即是武器",
+    "reference_works": [
+      "鱿鱼游戏",
+      "赌博默示录"
+    ],
+    "compatible_styles": [
+      "线性顺叙",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "游戏参与者"
+          }
+        },
+        {
+          "type": "RULE_CONSTRAINT",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "rule_name": "游戏规则"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 500,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "EVENT",
+          "canvas": {
+            "x": 500,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "RULE_CONSTRAINT",
+        "to_type": "CHARACTER",
+        "conn_type": "influences",
+        "label": "规则约束角色"
+      },
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "游戏目标"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "RULE_CONSTRAINT": 0.3,
+      "GOAL": 0.2,
+      "EVENT": 0.2
+    },
+    "writing_prompt_modifier": "这是游戏规则叙事。AI写作时注意：1)规则要明确且公平 2)主角利用规则漏洞要有创意 3)保持智力博弈的张力"
+  },
+  "D5": {
+    "name": "多种族共存",
+    "category": "D",
+    "difficulty": "expert",
+    "description": "多个智慧种族在同一世界中的冲突与共存",
+    "reference_works": [
+      "魔兽世界艾泽拉斯",
+      "指环王"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗",
+      "道德灰度"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "name": "种族A"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "种族B"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "FACTION_RELATION",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "FACTION",
+        "to_type": "FACTION_RELATION",
+        "conn_type": "contains",
+        "label": "种族关系"
+      },
+      {
+        "from_type": "FACTION",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "种族冲突"
+      }
+    ],
+    "progress_weights": {
+      "FACTION": 0.25,
+      "WORLDVIEW": 0.2,
+      "CHARACTER": 0.2,
+      "CONFLICT": 0.2,
+      "FACTION_RELATION": 0.15
+    },
+    "writing_prompt_modifier": "这是多种族共存叙事。AI写作时注意：1)每个种族有独立的文化和价值观 2)冲突源于文化差异而非简单善恶 3)多视角切换保持平衡"
+  },
+  "E2": {
+    "name": "认知颠覆",
+    "category": "E",
+    "difficulty": "intermediate",
+    "description": "主角对世界和自我的认知被彻底颠覆",
+    "reference_works": [
+      "搏击俱乐部",
+      "美丽心灵的永恒阳光"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "认知被颠覆者"
+          }
+        },
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SURPRISE",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GROWTH",
+        "conn_type": "contains",
+        "label": "认知转变"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GROWTH": 0.3,
+      "TURNING_POINT": 0.2,
+      "SURPRISE": 0.2
+    },
+    "writing_prompt_modifier": "这是认知颠覆叙事。AI写作时注意：1)认知颠覆要有足够的铺垫 2)颠覆后的世界观要自洽 3)展现角色的内在冲突"
+  },
+  "E3": {
+    "name": "救赎弧线",
+    "category": "E",
+    "difficulty": "advanced",
+    "description": "有罪之人的自我救赎之路",
+    "reference_works": [
+      "绝命毒师",
+      "冰火詹姆兰尼斯特"
+    ],
+    "compatible_styles": [
+      "线性叙事",
+      "道德灰度",
+      "冷峻克制"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "寻求救赎者"
+          }
+        },
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "arc_type": "救赎弧"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GROWTH",
+        "conn_type": "contains",
+        "label": "救赎之路"
+      },
+      {
+        "from_type": "GROWTH",
+        "to_type": "TURNING_POINT",
+        "conn_type": "causes",
+        "label": "转变节点"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GROWTH": 0.3,
+      "TURNING_POINT": 0.2,
+      "GOAL": 0.2
+    },
+    "writing_prompt_modifier": "这是救赎弧线叙事。AI写作时注意：1)过去的罪行要有真实分量 2)救赎过程要艰难 3)避免廉价的宽恕"
+  },
+  "E4": {
+    "name": "代价成长",
+    "category": "E",
+    "difficulty": "intermediate",
+    "description": "等价交换的法则，每一次成长都要付出代价",
+    "reference_works": [
+      "钢之炼金术师",
+      "Re:zero"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "付出代价者"
+          }
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GOAL",
+        "conn_type": "contains",
+        "label": "目标"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GOAL": 0.2,
+      "GROWTH": 0.25,
+      "CONFLICT": 0.25
+    },
+    "writing_prompt_modifier": "这是代价成长叙事。AI写作时注意：1)每次获得都要有明确牺牲 2)代价的累积效应 3)展现角色的抉择痛苦"
+  },
+  "E5": {
+    "name": "反英雄弧线",
+    "category": "E",
+    "difficulty": "advanced",
+    "description": "主角以非传统英雄的方式行事，挑战道德边界",
+    "reference_works": [
+      "死亡笔记",
+      "冰火瑟曦"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "道德灰度",
+      "冷峻克制"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "反英雄"
+          }
+        },
+        {
+          "type": "GROWTH",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "arc_type": "堕落弧"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "GOAL",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "CHARACTER",
+        "to_type": "GROWTH",
+        "conn_type": "contains",
+        "label": "堕落弧线"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.3,
+      "GROWTH": 0.25,
+      "CONFLICT": 0.25,
+      "GOAL": 0.2
+    },
+    "writing_prompt_modifier": "这是反英雄弧线叙事。AI写作时注意：1)反英雄的动机要有说服力 2)不做简单的道德判断 3)展现行为的连锁后果"
+  },
+  "F2": {
+    "name": "时代变迁",
+    "category": "F",
+    "difficulty": "expert",
+    "description": "在宏大时代背景下小人物的命运沉浮",
+    "reference_works": [
+      "乱世佳人",
+      "白鹿原"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "timeline_name": "时代轴",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "时代中人"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "TIMELINE",
+        "to_type": "CHARACTER",
+        "conn_type": "contains",
+        "label": "时代中的角色"
+      },
+      {
+        "from_type": "WORLDVIEW",
+        "to_type": "TIMELINE",
+        "conn_type": "contains",
+        "label": "时代背景"
+      }
+    ],
+    "progress_weights": {
+      "TIMELINE": 0.2,
+      "CHARACTER": 0.2,
+      "WORLDVIEW": 0.25,
+      "FACTION": 0.2,
+      "TURNING_POINT": 0.15
+    },
+    "writing_prompt_modifier": "这是时代变迁叙事。AI写作时注意：1)时代背景是重要角色 2)小人物命运反映大时代 3)历史感要贯穿始终"
+  },
+  "F5": {
+    "name": "万年史诗",
+    "category": "F",
+    "difficulty": "expert",
+    "description": "横跨千万年的宏大叙事，文明兴衰的完整记录",
+    "reference_works": [
+      "魔兽世界完整历史",
+      "硅基世界"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "timeline_name": "远古文明",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "timeline_name": "现代文明",
+            "timeline_type": "branch"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "史诗见证者"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "EVENT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "TIMELINE",
+        "to_type": "TIMELINE",
+        "conn_type": "follows",
+        "label": "时代传承"
+      },
+      {
+        "from_type": "WORLDVIEW",
+        "to_type": "TIMELINE",
+        "conn_type": "contains",
+        "label": "世界框架"
+      }
+    ],
+    "progress_weights": {
+      "TIMELINE": 0.25,
+      "WORLDVIEW": 0.25,
+      "CHARACTER": 0.2,
+      "FACTION": 0.15,
+      "EVENT": 0.15
+    },
+    "writing_prompt_modifier": "这是万年史诗叙事。AI写作时注意：1)跨越时间的变化要连贯 2)不同时代的风格要区分 3)核心主题贯穿万年的演变"
+  },
+  "F6": {
+    "name": "多神体系",
+    "category": "F",
+    "difficulty": "expert",
+    "description": "多个神系共存的宇宙观，神灵之间的争斗与协作",
+    "reference_works": [
+      "魔兽世界泰坦诸神",
+      "希腊神话"
+    ],
+    "compatible_styles": [
+      "多视角轮换",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "world_name": "神界宇宙"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "神系A"
+          }
+        },
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 100,
+            "y": 500
+          },
+          "content_defaults": {
+            "name": "神系B"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "神灵/凡人桥梁"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "RULE_CONSTRAINT",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "CONFLICT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "FACTION",
+        "to_type": "CONFLICT",
+        "conn_type": "causes",
+        "label": "神战"
+      },
+      {
+        "from_type": "WORLDVIEW",
+        "to_type": "FACTION",
+        "conn_type": "contains",
+        "label": "神系起源"
+      }
+    ],
+    "progress_weights": {
+      "WORLDVIEW": 0.25,
+      "FACTION": 0.25,
+      "CHARACTER": 0.2,
+      "RULE_CONSTRAINT": 0.15,
+      "CONFLICT": 0.15
+    },
+    "writing_prompt_modifier": "这是多神体系叙事。AI写作时注意：1)每个神系有自己的规则和领域 2)神灵争斗反映在凡人世界 3)保持神话的庄严感"
+  },
+  "G2": {
+    "name": "不可靠叙述",
+    "category": "G",
+    "difficulty": "expert",
+    "description": "叙述者不可信，读者需要自行判断真相",
+    "reference_works": [
+      "消失的爱人",
+      "房间"
+    ],
+    "compatible_styles": [
+      "限制第三人称",
+      "标准叙事"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "不可靠叙述者"
+          }
+        },
+        {
+          "type": "OMNISCIENT_LAYER",
+          "canvas": {
+            "x": 400,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "INFORMATION_BOUNDARY",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "HOOK",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "SURPRISE",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "OMNISCIENT_LAYER",
+        "to_type": "INFORMATION_BOUNDARY",
+        "conn_type": "influences",
+        "label": "信息操控"
+      },
+      {
+        "from_type": "INFORMATION_BOUNDARY",
+        "to_type": "CHARACTER",
+        "conn_type": "contains",
+        "label": "角色信息边界"
+      }
+    ],
+    "progress_weights": {
+      "CHARACTER": 0.2,
+      "OMNISCIENT_LAYER": 0.25,
+      "INFORMATION_BOUNDARY": 0.25,
+      "HOOK": 0.15,
+      "SURPRISE": 0.15
+    },
+    "writing_prompt_modifier": "这是不可靠叙述叙事。AI写作时注意：1)叙述者的偏见要一致 2)线索要隐藏在叙述中 3)全知层控制真正的真相"
+  },
+  "G3": {
+    "name": "平行宇宙",
+    "category": "G",
+    "difficulty": "advanced",
+    "description": "多个平行世界线并行展开，选择决定命运的分歧",
+    "reference_works": [
+      "蝴蝶效应",
+      "彗星来的那一夜"
+    ],
+    "compatible_styles": [
+      "交叉叙事",
+      "非线性碎片"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "timeline_name": "宇宙A",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "timeline_name": "宇宙B",
+            "timeline_type": "branch"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 500,
+            "y": 200
+          },
+          "content_defaults": {
+            "name": "跨线角色"
+          }
+        }
+      ],
+      "recommended": [
+        {
+          "type": "SCENE",
+          "canvas": {
+            "x": 500,
+            "y": 400
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "TURNING_POINT",
+          "canvas": {
+            "x": 800,
+            "y": 200
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "TIMELINE",
+        "to_type": "TIMELINE",
+        "conn_type": "parallels",
+        "label": "平行关系"
+      }
+    ],
+    "progress_weights": {
+      "TIMELINE": 0.3,
+      "CHARACTER": 0.25,
+      "SCENE": 0.2,
+      "TURNING_POINT": 0.25
+    },
+    "writing_prompt_modifier": "这是平行宇宙叙事。AI写作时注意：1)每条线要保持独立自洽 2)关键选择点要清晰 3)跨线影响要合理"
+  },
+  "G4": {
+    "name": "编年史",
+    "category": "G",
+    "difficulty": "expert",
+    "description": "按时间顺序记录重要事件的史诗编年体叙事",
+    "reference_works": [
+      "魔兽世界官方小说群",
+      "冰火世界史"
+    ],
+    "compatible_styles": [
+      "交叉叙事",
+      "厚重史诗"
+    ],
+    "auto_blocks": {
+      "required": [
+        {
+          "type": "TIMELINE",
+          "canvas": {
+            "x": 100,
+            "y": 100
+          },
+          "content_defaults": {
+            "timeline_name": "编年主轴",
+            "timeline_type": "main"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 300
+          },
+          "content_defaults": {
+            "name": "编年视角角色A"
+          }
+        },
+        {
+          "type": "CHARACTER",
+          "canvas": {
+            "x": 100,
+            "y": 500
+          },
+          "content_defaults": {
+            "name": "编年视角角色B"
+          }
+        },
+        {
+          "type": "WORLDVIEW",
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ],
+      "recommended": [
+        {
+          "type": "FACTION",
+          "canvas": {
+            "x": 700,
+            "y": 100
+          },
+          "content_defaults": {}
+        },
+        {
+          "type": "EVENT",
+          "canvas": {
+            "x": 700,
+            "y": 300
+          },
+          "content_defaults": {}
+        }
+      ]
+    },
+    "auto_connections": [
+      {
+        "from_type": "TIMELINE",
+        "to_type": "CHARACTER",
+        "conn_type": "contains",
+        "label": "编年主角"
+      },
+      {
+        "from_type": "TIMELINE",
+        "to_type": "EVENT",
+        "conn_type": "contains",
+        "label": "编年事件"
+      }
+    ],
+    "progress_weights": {
+      "TIMELINE": 0.2,
+      "CHARACTER": 0.25,
+      "WORLDVIEW": 0.2,
+      "FACTION": 0.2,
+      "EVENT": 0.15
+    },
+    "writing_prompt_modifier": "这是编年史叙事。AI写作时注意：1)时间顺序是核心结构 2)每个时期的风格要有所变化 3)角色的代际传承"
+  }
+}
