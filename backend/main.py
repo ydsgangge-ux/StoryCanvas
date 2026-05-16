@@ -38,12 +38,12 @@ async def lifespan(app: FastAPI):
         for proj in project_ids:
             task = asyncio.create_task(auto_snapshot_loop(proj["id"]))
             app._snapshot_tasks.append(task)
-        print(f"  ✓ 自动快照任务已启动 ({len(project_ids)} 个项目)")
+        print(f"  [OK] 自动快照任务已启动 ({len(project_ids)} 个项目)")
     except Exception as e:
-        print(f"  ! 自动快照启动跳过: {e}")
-    print(f"  ✓ 数据库初始化完成")
-    print(f"  ✓ LLM后端: {settings.llm_provider}")
-    print(f"  ✓ 服务端口: {settings.port}")
+        print(f"  [SKIP] 自动快照启动跳过: {e}")
+    print(f"  [OK] 数据库初始化完成")
+    print(f"  [OK] LLM后端: {settings.llm_provider}")
+    print(f"  [OK] 服务端口: {settings.port}")
     yield
     # Shutdown
     print("服务已停止")

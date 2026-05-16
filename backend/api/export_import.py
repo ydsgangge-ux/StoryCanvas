@@ -148,6 +148,23 @@ def export_full(project_id: str, include_drafts: bool = Query(False)):
             cp_dict.pop("project_id", None)
             zf.writestr(f"snapshots/checkpoint_{i+1:03d}.json", json.dumps(cp_dict, ensure_ascii=False, indent=2))
 
+        # 章节完整数据（标题/大纲/细纲/状态/审计结果等）
+        chapters_meta = []
+        for ch in chapters:
+            ch_dict = {
+                "chapter_num": ch["chapter_num"],
+                "title": ch["title"],
+                "timeline_id": ch["timeline_id"],
+                "outline": ch["outline"],
+                "status": ch["status"],
+                "word_count": ch["word_count"],
+                "block_refs": json.loads(ch["block_refs"] or "[]"),
+                "special_links": json.loads(ch["special_links"] or "[]"),
+                "audit_result": json.loads(ch["audit_result"]) if ch["audit_result"] else None,
+            }
+            chapters_meta.append(ch_dict)
+        zf.writestr("chapters.json", json.dumps(chapters_meta, ensure_ascii=False, indent=2))
+
         # 章节正文
         for ch in chapters:
             if ch["content"]:
@@ -355,31 +372,68 @@ def _import_storycanvas(content: bytes) -> dict:
             conn.execute("UPDATE projects SET style_sig = ? WHERE id = ?",
                          (json.dumps(style, ensure_ascii=False), new_id))
 
-        # 还原章节正文
-        chapter_files = sorted([n for n in names if n.startswith("chapters/")])
+        # 还原章节
+        chapters_meta = {}
+        if "chapters.json" in names:
+            chapters_meta = {ch["chapter_num"]: ch for ch in json.loads(zf.read("chapters.json"))}
+
+        chapter_files = sorted([n for n in names if n.startswith("chapters/") and n.endswith(".md")])
         for cf in chapter_files:
             try:
                 parts = cf.split("_")
                 chapter_num = int(parts[1].split(".")[0]) if len(parts) >= 2 else 0
                 content_md = zf.read(cf).decode("utf-8")
                 ch_id = str(uuid.uuid4())
+                meta_ch = chapters_meta.get(chapter_num, {})
                 conn.execute(
-                    "INSERT INTO chapters (id, project_id, chapter_num, content, word_count, status) VALUES (?, ?, ?, ?, ?, 'imported')",
-                    (ch_id, new_id, chapter_num, content_md, len(content_md))
+                    """INSERT INTO chapters (id, project_id, chapter_num, title, timeline_id, outline,
+                       content, word_count, status, block_refs, special_links, audit_result)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (ch_id, new_id, chapter_num,
+                     meta_ch.get("title"), meta_ch.get("timeline_id"),
+                     meta_ch.get("outline"),
+                     content_md, meta_ch.get("word_count") or len(content_md),
+                     meta_ch.get("status", "imported"),
+                     json.dumps(meta_ch.get("block_refs", []), ensure_ascii=False),
+                     json.dumps(meta_ch.get("special_links", []), ensure_ascii=False),
+                     json.dumps(meta_ch["audit_result"], ensure_ascii=False) if meta_ch.get("audit_result") else None)
                 )
             except (ValueError, IndexError):
                 continue
 
+        for ch_num, meta_ch in chapters_meta.items():
+            existing = conn.execute("SELECT id FROM chapters WHERE project_id = ? AND chapter_num = ?", (new_id, ch_num)).fetchone()
+            if not existing:
+                ch_id = str(uuid.uuid4())
+                conn.execute(
+                    """INSERT INTO chapters (id, project_id, chapter_num, title, timeline_id, outline,
+                       content, word_count, status, block_refs, special_links, audit_result)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (ch_id, new_id, ch_num,
+                     meta_ch.get("title"), meta_ch.get("timeline_id"),
+                     meta_ch.get("outline"),
+                     None, meta_ch.get("word_count", 0),
+                     meta_ch.get("status", "planned"),
+                     json.dumps(meta_ch.get("block_refs", []), ensure_ascii=False),
+                     json.dumps(meta_ch.get("special_links", []), ensure_ascii=False),
+                     json.dumps(meta_ch["audit_result"], ensure_ascii=False) if meta_ch.get("audit_result") else None)
+                )
+
         conn.commit()
+
+        actual_blocks = conn.execute("SELECT count(*) as cnt FROM blocks WHERE project_id = ?", (new_id,)).fetchone()["cnt"]
+        actual_chapters = conn.execute("SELECT count(*) as cnt FROM chapters WHERE project_id = ?", (new_id,)).fetchone()["cnt"]
+        actual_words = conn.execute("SELECT COALESCE(SUM(word_count),0) as total FROM chapters WHERE project_id = ?", (new_id,)).fetchone()["total"]
+
         conn.close()
 
         return {
             "project_id": new_id,
             "title": meta.get("title", "导入项目"),
             "stats": {
-                "blocks": meta.get("stats", {}).get("total_blocks", 0),
-                "chapters": meta.get("stats", {}).get("total_chapters", 0),
-                "words": meta.get("stats", {}).get("total_words", 0),
+                "blocks": actual_blocks,
+                "chapters": actual_chapters,
+                "words": actual_words,
             }
         }
 
@@ -440,14 +494,15 @@ def _restore_canvas(conn, project_id: str, canvas: dict):
         actual_id = id_map.get(bid, bid)
         conn.execute(
             """INSERT OR REPLACE INTO blocks (id, project_id, type, canvas_x, canvas_y, canvas_w, collapsed,
-               color, timeline_id, chapter_pos, tags, notes, content, is_draft)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               color, timeline_id, chapter_pos, tags, notes, content, is_draft, on_canvas)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (actual_id, project_id, block.get("type", "SCENE"), block.get("canvas_x", 0),
              block.get("canvas_y", 0), block.get("canvas_w", 280),
              block.get("collapsed", 0), block.get("color"), block.get("timeline_id"),
              block.get("chapter_pos"), block.get("tags", "[]"), block.get("notes", ""),
              json.dumps(block.get("content", {}), ensure_ascii=False),
-             block.get("is_draft", 0))
+             block.get("is_draft", 0),
+             block.get("on_canvas", 0))
         )
 
     for conn_data in canvas.get("connections", []):
@@ -455,9 +510,12 @@ def _restore_canvas(conn, project_id: str, canvas: dict):
         old_to = conn_data.get("to_block", "")
         actual_from = id_map.get(old_from, old_from)
         actual_to = id_map.get(old_to, old_to)
+        old_conn_id = conn_data.get("id", str(uuid.uuid4()))
+        existing_conn = conn.execute("SELECT id FROM connections WHERE id = ?", (old_conn_id,)).fetchone()
+        actual_conn_id = str(uuid.uuid4()) if existing_conn else old_conn_id
         conn.execute(
             "INSERT INTO connections (id, project_id, from_block, to_block, conn_type, label, chapter_hint) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (conn_data.get("id", str(uuid.uuid4())), project_id, actual_from, actual_to,
+            (actual_conn_id, project_id, actual_from, actual_to,
              conn_data.get("conn_type", "follows"), conn_data.get("label"), conn_data.get("chapter_hint"))
         )
 
@@ -596,11 +654,19 @@ async def import_dramatica_flow(file: UploadFile = File(...)):
     import zipfile
 
     content = await file.read()
+    filename = file.filename or ""
     project_id = str(uuid.uuid4())
+
+    if filename.endswith(".storycanvas"):
+        return _import_storycanvas(content)
 
     try:
         zf = zipfile.ZipFile(io.BytesIO(content))
         names = zf.namelist()
+
+        if "metadata.json" in names and "canvas.json" in names:
+            zf.close()
+            return _import_storycanvas(content)
 
         def read_json(path):
             return json.loads(zf.read(path).decode("utf-8")) if path in names else {}

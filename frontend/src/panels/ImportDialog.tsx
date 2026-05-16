@@ -105,10 +105,17 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     try {
       const form = new FormData();
       form.append('file', dfFile);
-      const res = await fetch('/api/import/dramatica-flow', { method: 'POST', body: form });
-      if (!res.ok) { showToast(t('import.import_failed'), 'error'); return; }
+      const isStorycanvas = dfFile.name.endsWith('.storycanvas');
+      const endpoint = isStorycanvas ? '/api/projects/import' : '/api/import/dramatica-flow';
+      const res = await fetch(endpoint, { method: 'POST', body: form });
+      if (!res.ok) {
+        const errText = await res.text();
+        try { const errJson = JSON.parse(errText); showToast(errJson.detail || t('import.import_failed'), 'error'); }
+        catch { showToast(t('import.import_failed'), 'error'); }
+        return;
+      }
       const data = await res.json();
-      showToast(t('import.import_complete', { canvas: data.on_canvas, pool: data.in_pool }));
+      showToast(t('import.import_complete', { canvas: data.on_canvas ?? data.stats?.blocks ?? 0, pool: data.in_pool ?? 0 }));
       await loadProjects();
       await loadProject(data.project_id);
       onClose();
@@ -238,7 +245,7 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </div>
                 )}
               </div>
-              <input id="df-file-input" type="file" accept=".zip" style={{ display: 'none' }}
+              <input id="df-file-input" type="file" accept=".zip,.storycanvas" style={{ display: 'none' }}
                 onChange={(e) => setDfFile(e.target.files?.[0] || null)} />
               <button className="btn btn-primary" onClick={handleImportDramatica} disabled={importingDf || !dfFile}
                 style={{ width: '100%' }}>
