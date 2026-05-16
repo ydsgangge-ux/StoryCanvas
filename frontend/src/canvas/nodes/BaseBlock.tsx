@@ -1,6 +1,7 @@
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { BlockData, BLOCK_COLORS, BLOCK_LABELS } from '../../types/blocks';
+import { BlockData, BLOCK_COLORS } from '../../types/blocks';
+import { t } from '../../i18n';
 
 const BLOCK_ICONS: Record<string, string> = {
   CHARACTER: 'C', SCENE: 'S', TIMELINE: 'T', EVENT: 'E', HOOK: '?',
@@ -21,235 +22,235 @@ const BLOCK_ICONS: Record<string, string> = {
 
 function getBlockTitle(data: BlockData): string {
   const c = data.content || {};
-  if (data.type === 'CHARACTER') return c.name || '新角色';
-  if (data.type === 'SCENE') return c.title || '新场景';
-  if (data.type === 'TIMELINE') return c.timeline_name || '新时间线';
-  if (data.type === 'EVENT') return c.title || '新事件';
-  if (data.type === 'HOOK') return c.title || '新悬念';
-  if (data.type === 'WORLDVIEW') return c.world_name || '新世界观';
-  if (data.type === 'FACTION') return c.name || '新势力';
-  if (data.type === 'GOAL') return c.surface_goal || '新目标';
-  if (data.type === 'CONFLICT') return c.title || '新冲突';
-  if (data.type === 'TURNING_POINT') return c.title || '新转折';
-  if (data.type === 'FORESHADOW') return c.title || '新铺垫';
-  if (data.type === 'SURPRISE') return c.title || '新意外';
-  if (data.type === 'RELATIONSHIP') return c.relationship_type || '新关系';
-  if (data.type === 'FACTION_RELATION') return c.relation_type || '势力关系';
-  if (data.type === 'ATMOSPHERE') return c.name || '新意境';
-  if (data.type === 'RULE_CONSTRAINT') return c.rule_name || '新规则';
-  if (data.type === 'WORLD_DEVELOPMENT') return c.aspect || '世界发展';
-  if (data.type === 'VISUAL_MOTIF') return c.motif_name || '视觉主题';
-  if (data.type === 'LENS') return c.lens_type || '镜头';
-  if (data.type === 'SCENE_HEADING') return [c.interior_exterior, c.location, c.time_of_day].filter(Boolean).join(' ') || '场景头';
-  if (data.type === 'ACTION_LINE') return (c.description || '').substring(0, 30) || '动作行';
-  if (data.type === 'DIALOGUE') return (c.line_text || '').substring(0, 30) || '对白';
-  if (data.type === 'STORY_CARD') return c.card_name || c.card_id || '故事卡';
-  if (data.type === 'READER_EMOTION_CURVE') return `${c.overall_trajectory || '曲线'}`;
-  if (data.type === 'THEME_STATEMENT') return (c.theme || '').substring(0, 30) || '主题';
-  if (data.type === 'EMOTION_TARGET') return `第${c.chapter || '?'}章 ${c.primary_emotion || ''}`;
-  if (data.type === 'RHYTHM') return `第${c.chapter || '?'}章 ${c.rhythm_type || ''}`;
-  if (data.type === 'CURRENT_STATE') return c.character_id ? `角色${c.character_id} 第${c.chapter || '?'}章` : '当前状态';
-  if (data.type === 'INFORMATION_BOUNDARY') return c.character_id ? `角色${c.character_id} 第${c.chapter || '?'}章` : '信息边界';
-  if (data.type === 'TIMESTAMP') return c.era_name || '新时间戳';
-  if (data.type === 'STORY_OUTLINE') return c.title || '故事大纲';
-  if (data.type === 'CHAPTER_OUTLINE') return `第${c.chapter_number || '?'}章 ${c.title || '大纲'}`;
-  if (data.type === 'CHAPTER_DETAIL') return `第${c.chapter_number || '?'}章细纲: ${c.title || ''}`;
-  if (data.type === 'STORY_SYNOPSIS') return c.title || '故事简介';
-  return BLOCK_LABELS[data.type] || data.type;
+  if (data.type === 'CHARACTER') return c.name || t('char.new_character');
+  if (data.type === 'SCENE') return c.title || t('block.new_scene');
+  if (data.type === 'TIMELINE') return c.timeline_name || t('block.new_timeline');
+  if (data.type === 'EVENT') return c.title || t('block.new_event');
+  if (data.type === 'HOOK') return c.title || t('block.new_hook');
+  if (data.type === 'WORLDVIEW') return c.world_name || t('block.new_worldview');
+  if (data.type === 'FACTION') return c.name || t('block.new_faction');
+  if (data.type === 'GOAL') return c.surface_goal || t('block.new_goal');
+  if (data.type === 'CONFLICT') return c.title || t('block.new_conflict');
+  if (data.type === 'TURNING_POINT') return c.title || t('block.new_turning');
+  if (data.type === 'FORESHADOW') return c.title || t('block.new_foreshadow');
+  if (data.type === 'SURPRISE') return c.title || t('block.new_surprise');
+  if (data.type === 'RELATIONSHIP') return c.relationship_type || t('block.new_relationship');
+  if (data.type === 'FACTION_RELATION') return c.relation_type || t('block.faction_relation');
+  if (data.type === 'ATMOSPHERE') return c.name || t('block.new_atmosphere');
+  if (data.type === 'RULE_CONSTRAINT') return c.rule_name || t('block.new_rule');
+  if (data.type === 'WORLD_DEVELOPMENT') return c.aspect || t('block.world_development');
+  if (data.type === 'VISUAL_MOTIF') return c.motif_name || t('block.visual_motif');
+  if (data.type === 'LENS') return c.lens_type || t('block.lens');
+  if (data.type === 'SCENE_HEADING') return [c.interior_exterior, c.location, c.time_of_day].filter(Boolean).join(' ') || t('block.scene_heading');
+  if (data.type === 'ACTION_LINE') return (c.description || '').substring(0, 30) || t('block.action_line');
+  if (data.type === 'DIALOGUE') return (c.line_text || '').substring(0, 30) || t('block.dialogue');
+  if (data.type === 'STORY_CARD') return c.card_name || c.card_id || t('block.story_card');
+  if (data.type === 'READER_EMOTION_CURVE') return `${c.overall_trajectory || t('block.curve')}`;
+  if (data.type === 'THEME_STATEMENT') return (c.theme || '').substring(0, 30) || t('block.theme_statement');
+  if (data.type === 'EMOTION_TARGET') return `${t('field.chapter')}${c.chapter || '?'} ${c.primary_emotion || ''}`;
+  if (data.type === 'RHYTHM') return `${t('field.chapter')}${c.chapter || '?'} ${c.rhythm_type || ''}`;
+  if (data.type === 'CURRENT_STATE') return c.character_id ? `${t('field.character_id')}${c.character_id} ${t('field.chapter')}${c.chapter || '?'}` : t('block.current_state');
+  if (data.type === 'INFORMATION_BOUNDARY') return c.character_id ? `${t('field.character_id')}${c.character_id} ${t('field.chapter')}${c.chapter || '?'}` : t('block.information_boundary');
+  if (data.type === 'TIMESTAMP') return c.era_name || t('block.new_timestamp');
+  if (data.type === 'STORY_OUTLINE') return c.title || t('block.story_outline');
+  if (data.type === 'CHAPTER_OUTLINE') return `${t('field.chapter')}${c.chapter_number || '?'} ${c.title || t('block.outline')}`;
+  if (data.type === 'CHAPTER_DETAIL') return `${t('field.chapter')}${c.chapter_number || '?'}${t('block.detail')}: ${c.title || ''}`;
+  if (data.type === 'STORY_SYNOPSIS') return c.title || t('block.story_synopsis');
+  return t(`block.${data.type}`);
 }
 
 /**
  * 按块类型返回要在画布块上显示的关键字段信息（最多3行）
  */
-function getBlockSummary(data: BlockData): { label: string; value: string }[] {
+function getBlockSummary(data: BlockData): { label: string; value: string | undefined }[] {
   const c = data.content || {};
 
   switch (data.type) {
     // ─── 角色类 ────────────────────────────────
     case 'PERSONALITY':
       return [
-        { label: '功能', value: c.dramatica_function || '?' },
-        { label: '价值观', value: trunc(c.core_values, 28) },
+        { label: t('summary.function'), value: c.dramatica_function || '?' },
+        { label: t('summary.values'), value: trunc(c.core_values, 28) },
       ];
     case 'GROWTH':
       return [
-        { label: '弧线', value: c.arc_type || '?' },
-        { label: '终点', value: trunc(c.end_state, 28) },
+        { label: t('summary.arc'), value: c.arc_type || '?' },
+        { label: t('summary.end_point'), value: trunc(c.end_state, 28) },
       ];
     case 'BACKSTORY':
       return [
-        { label: '起源', value: trunc(c.origin, 30) },
-        { label: '秘密', value: trunc(c.secrets, 20) },
+        { label: t('summary.origin'), value: trunc(c.origin, 30) },
+        { label: t('summary.secrets'), value: trunc(c.secrets, 20) },
       ];
     case 'CURRENT_STATE':
       return [
-        { label: '心理', value: trunc(c.psychological_condition, 30) },
-        { label: '情绪', value: trunc(c.emotional_state, 20) },
+        { label: t('summary.psychology'), value: trunc(c.psychological_condition, 30) },
+        { label: t('summary.emotion'), value: trunc(c.emotional_state, 20) },
       ];
     case 'INFORMATION_BOUNDARY':
       return [
-        { label: '已知', value: trunc(c.confirmed_knowledge, 30) },
-        { label: '误信', value: trunc(c.wrongly_believes, 20) },
+        { label: t('summary.known'), value: trunc(c.confirmed_knowledge, 30) },
+        { label: t('summary.misbelief'), value: trunc(c.wrongly_believes, 20) },
       ];
     case 'OMNISCIENT_LAYER':
       return [
-        { label: '事实', value: trunc(c.true_facts, 30) },
+        { label: t('summary.facts'), value: trunc(c.true_facts, 30) },
       ];
     // ─── 世界类 ────────────────────────────────
     case 'WORLDVIEW':
       return [
-        { label: '规则', value: trunc(c.fundamental_rules, 30) },
+        { label: t('summary.rules'), value: trunc(c.fundamental_rules, 30) },
       ];
     case 'FACTION':
       return [
-        { label: '信条', value: trunc(c.ideology, 30) },
+        { label: t('summary.creed'), value: trunc(c.ideology, 30) },
       ];
     case 'RULE_CONSTRAINT':
       return [
-        { label: '类型', value: c.rule_type || '?' },
-        { label: '机制', value: trunc(c.mechanism, 25) },
+        { label: t('summary.type'), value: c.rule_type || '?' },
+        { label: t('summary.mechanism'), value: trunc(c.mechanism, 25) },
       ];
     case 'WORLD_DEVELOPMENT':
       return [
-        { label: '现状', value: trunc(c.current_state, 30) },
+        { label: t('summary.current'), value: trunc(c.current_state, 30) },
       ];
     case 'TIMESTAMP':
       return [
-        { label: '范围', value: c.time_range || '?' },
-        { label: '变化', value: trunc(c.key_changes, 25) },
+        { label: t('summary.range'), value: c.time_range || '?' },
+        { label: t('summary.changes'), value: trunc(c.key_changes, 25) },
       ];
     // ─── 叙事结构类 ────────────────────────────
     case 'TIMELINE':
       return [
-        { label: '类型', value: c.timeline_type || '?' },
-        { label: '视角', value: trunc(c.pov_characters, 25) },
+        { label: t('summary.type'), value: c.timeline_type || '?' },
+        { label: t('summary.pov'), value: trunc(c.pov_characters, 25) },
       ];
     case 'EVENT':
       return [
-        { label: '内容', value: trunc(c.what_happens, 35) },
+        { label: t('summary.content'), value: trunc(c.what_happens, 35) },
       ];
     case 'GOAL':
       return [
-        { label: '深层目标', value: trunc(c.deep_goal, 30) },
-        { label: '障碍', value: trunc(c.obstacle, 20) },
+        { label: t('summary.deep_goal'), value: trunc(c.deep_goal, 30) },
+        { label: t('summary.obstacle'), value: trunc(c.obstacle, 20) },
       ];
     case 'CONFLICT':
       return [
-        { label: '类型', value: c.conflict_type || '?' },
-        { label: '根源', value: trunc(c.root_cause, 25) },
+        { label: t('summary.type'), value: c.conflict_type || '?' },
+        { label: t('summary.root'), value: trunc(c.root_cause, 25) },
       ];
     case 'TURNING_POINT':
       return [
-        { label: '类型', value: c.turning_type || '?' },
-        { label: '前', value: trunc(c.before_state, 20) },
-        { label: '后', value: trunc(c.after_state, 20) },
+        { label: t('summary.type'), value: c.turning_type || '?' },
+        { label: t('summary.before'), value: trunc(c.before_state, 20) },
+        { label: t('summary.after'), value: trunc(c.after_state, 20) },
       ];
     case 'HOOK':
       return [
-        { label: '类型', value: c.hook_type || '?' },
-        { label: '埋设', value: `第${c.plant_chapter || '?'}章` },
-        { label: '回收', value: `第${c.payoff_chapter || '?'}章` },
+        { label: t('summary.type'), value: c.hook_type || '?' },
+        { label: t('summary.plant'), value: `${t('field.chapter')}${c.plant_chapter || '?'}` },
+        { label: t('summary.payoff'), value: `${t('field.chapter')}${c.payoff_chapter || '?'}` },
       ];
     case 'FORESHADOW':
       return [
-        { label: '暗示', value: trunc(c.hint_content, 30) },
-        { label: '回收', value: `第${c.payoff_chapter || '?'}章` },
+        { label: t('summary.hint'), value: trunc(c.hint_content, 30) },
+        { label: t('summary.payoff'), value: `${t('field.chapter')}${c.payoff_chapter || '?'}` },
       ];
     case 'SURPRISE':
       return [
-        { label: '类型', value: c.surprise_type || '?' },
-        { label: '揭示', value: trunc(c.revelation, 25) },
+        { label: t('summary.type'), value: c.surprise_type || '?' },
+        { label: t('summary.reveal'), value: trunc(c.revelation, 25) },
       ];
     // ─── 关系类 ────────────────────────────────
     case 'RELATIONSHIP':
       return [
-        { label: '角色', value: `${c.party_a_id || '?'} ↔ ${c.party_b_id || '?'}` },
-        { label: '强度', value: c.intensity ? `${c.intensity}/10` : '?' },
+        { label: t('summary.character'), value: `${c.party_a_id || '?'} ↔ ${c.party_b_id || '?'}` },
+        { label: t('summary.intensity'), value: c.intensity ? `${c.intensity}/10` : '?' },
       ];
     case 'FACTION_RELATION':
       return [
-        { label: '势力', value: `${c.faction_a_id || '?'} ↔ ${c.faction_b_id || '?'}` },
-        { label: '紧张度', value: c.current_tension ? `${c.current_tension}/10` : '?' },
+        { label: t('summary.faction'), value: `${c.faction_a_id || '?'} ↔ ${c.faction_b_id || '?'}` },
+        { label: t('summary.tension'), value: c.current_tension ? `${c.current_tension}/10` : '?' },
       ];
     // ─── 表达类 ────────────────────────────────
     case 'ATMOSPHERE':
       return [
-        { label: '基调', value: c.emotional_tone || '?' },
-        { label: '细节', value: trunc(c.sensory_details, 25) },
+        { label: t('summary.tone'), value: c.emotional_tone || '?' },
+        { label: t('summary.details'), value: trunc(c.sensory_details, 25) },
       ];
     case 'EMOTION_TARGET':
       return [
-        { label: '情绪', value: c.primary_emotion || '?' },
-        { label: '强度', value: c.intensity ? `${c.intensity}/10` : '?' },
+        { label: t('summary.emotion'), value: c.primary_emotion || '?' },
+        { label: t('summary.intensity'), value: c.intensity ? `${c.intensity}/10` : '?' },
       ];
     case 'RHYTHM':
       return [
-        { label: '节奏', value: c.rhythm_type || '?' },
-        { label: '说明', value: trunc(c.pacing_notes, 25) },
+        { label: t('summary.rhythm'), value: c.rhythm_type || '?' },
+        { label: t('summary.notes'), value: trunc(c.pacing_notes, 25) },
       ];
     case 'THEME_STATEMENT':
       return [
-        { label: '主题', value: trunc(c.theme, 35) },
+        { label: t('summary.theme'), value: trunc(c.theme, 35) },
       ];
     case 'LENS':
       return [
-        { label: '镜头', value: c.lens_type || '?' },
-        { label: '焦点', value: trunc(c.focus_description, 25) },
+        { label: t('summary.lens'), value: c.lens_type || '?' },
+        { label: t('summary.focus'), value: trunc(c.focus_description, 25) },
       ];
     // ─── 剧本类 ────────────────────────────────
     case 'SCENE_HEADING':
       return [
-        { label: '地点', value: c.location || '?' },
-        { label: '时间', value: c.time_of_day || '?' },
+        { label: t('summary.location'), value: c.location || '?' },
+        { label: t('summary.time'), value: c.time_of_day || '?' },
       ];
     case 'ACTION_LINE':
       return [
-        { label: '动作', value: trunc(c.description, 35) },
+        { label: t('summary.action'), value: trunc(c.description, 35) },
       ];
     case 'DIALOGUE':
       return [
-        { label: c.character_id || '角色', value: trunc(c.line_text, 35) },
+        { label: c.character_id || t('summary.character'), value: trunc(c.line_text, 35) },
       ];
     case 'VISUAL_MOTIF':
       return [
-        { label: '象征', value: trunc(c.symbolic_meaning, 30) },
-        { label: '描述', value: trunc(c.visual_description, 25) },
+        { label: t('summary.symbol'), value: trunc(c.symbolic_meaning, 30) },
+        { label: t('summary.description'), value: trunc(c.visual_description, 25) },
       ];
     // ─── 大纲类（参考 Dramatica-Flow 叙事架构） ────
     case 'STORY_SYNOPSIS':
       return [
-        { label: '梗概', value: trunc(c.logline, 35) },
-        { label: '基调', value: c.tone ? trunc(c.tone, 20) : undefined },
-        { label: '主题', value: c.theme ? trunc(c.theme, 25) : undefined },
+        { label: t('summary.logline'), value: trunc(c.logline, 35) },
+        { label: t('summary.tone'), value: c.tone ? trunc(c.tone, 20) : undefined },
+        { label: t('summary.theme'), value: c.theme ? trunc(c.theme, 25) : undefined },
       ].filter(r => r.value);
     case 'STORY_OUTLINE':
       return [
-        { label: '梗概', value: trunc(c.logline, 35) },
-        { label: '第一幕', value: trunc(c.act1_summary, 25) },
-        { label: c.ending_type || '结局', value: trunc(c.climax_design || c.act3_summary, 25) },
+        { label: t('summary.logline'), value: trunc(c.logline, 35) },
+        { label: t('summary.act1'), value: trunc(c.act1_summary, 25) },
+        { label: c.ending_type || t('summary.ending'), value: trunc(c.climax_design || c.act3_summary, 25) },
       ];
     case 'CHAPTER_OUTLINE':
       return [
-        { label: c.dramatic_function || '叙事', value: trunc(c.summary, 35) },
-        { label: '节拍', value: trunc(c.beat1_desc || c.beat2_desc, 30) },
-        { label: '视角', value: c.pov_character || '?' },
+        { label: c.dramatic_function || t('summary.narrative'), value: trunc(c.summary, 35) },
+        { label: t('summary.beat'), value: trunc(c.beat1_desc || c.beat2_desc, 30) },
+        { label: t('summary.pov'), value: c.pov_character || '?' },
       ];
     case 'CHAPTER_DETAIL':
       return [
-        { label: '场景1', value: c.scene1_heading ? `${c.scene1_heading}${c.scene1_content ? ': ' + trunc(c.scene1_content, 20) : ''}` : '-' },
-        { label: '场景2', value: c.scene2_heading ? `${c.scene2_heading}${c.scene2_content ? ': ' + trunc(c.scene2_content, 20) : ''}` : '-' },
-        { label: '冲突', value: trunc(c.key_conflicts, 25) },
+        { label: t('summary.scene1'), value: c.scene1_heading ? `${c.scene1_heading}${c.scene1_content ? ': ' + trunc(c.scene1_content, 20) : ''}` : '-' },
+        { label: t('summary.scene2'), value: c.scene2_heading ? `${c.scene2_heading}${c.scene2_content ? ': ' + trunc(c.scene2_content, 20) : ''}` : '-' },
+        { label: t('summary.conflict'), value: trunc(c.key_conflicts, 25) },
       ];
     // ─── 特殊类 ────────────────────────────────
     case 'STORY_CARD':
       return [
-        { label: '分类', value: c.genre || '?' },
-        { label: '风格', value: trunc(c.writing_modifier, 25) },
+        { label: t('summary.genre'), value: c.genre || '?' },
+        { label: t('summary.style'), value: trunc(c.writing_modifier, 25) },
       ];
     case 'READER_EMOTION_CURVE':
       return [
-        { label: '走向', value: c.overall_trajectory || '?' },
-        { label: '高峰', value: trunc(c.peak_points, 25) },
+        { label: t('summary.trajectory'), value: c.overall_trajectory || '?' },
+        { label: t('summary.peak'), value: trunc(c.peak_points, 25) },
       ];
     default:
       return [];
@@ -266,7 +267,7 @@ const BaseBlock: React.FC<NodeProps<BlockData>> = ({ data, selected }) => {
   const completeness = data.completeness || 0;
   const title = getBlockTitle(data);
   const summary = getBlockSummary(data);
-  const tooltip = `${BLOCK_LABELS[data.type] || data.type} | 完整度: ${Math.round(completeness * 100)}% | ${title}`;
+  const tooltip = `${t(`block.${data.type}`)} | ${t('editor.completeness')}: ${Math.round(completeness * 100)}% | ${title}`;
 
   return (
     <div
@@ -275,7 +276,7 @@ const BaseBlock: React.FC<NodeProps<BlockData>> = ({ data, selected }) => {
       title={tooltip}
     >
       <div className="block-header">
-        <div className="block-type-icon" style={{ background: color }} title={BLOCK_LABELS[data.type] || data.type}>
+        <div className="block-type-icon" style={{ background: color }} title={t(`block.${data.type}`)}>
           {BLOCK_ICONS[data.type] || '?'}
         </div>
         <div className="block-title">{title}</div>

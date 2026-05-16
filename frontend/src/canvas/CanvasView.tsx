@@ -15,7 +15,6 @@ import { useProjectStore } from '../store/projectStore';
 import { useUIStore } from '../store/uiStore';
 import { BaseBlock, CharacterBlock, SceneBlock } from './nodes';
 import ProgressBar from './overlays/ProgressBar';
-import { BLOCK_LABELS, BLOCK_COLORS, CONN_LABELS } from '../types/blocks';
 import { useT } from '../i18n/useT';
 
 const nodeTypes: NodeTypes = {
@@ -25,14 +24,14 @@ const nodeTypes: NodeTypes = {
 };
 
 const CONN_TYPES = [
-  { value: 'causes', label: '因果', desc: 'A导致B发生' },
-  { value: 'follows', label: '时序', desc: 'A在B之前发生' },
-  { value: 'parallels', label: '并行', desc: 'A与B同时发生' },
-  { value: 'foreshadows', label: '铺垫', desc: 'A暗示B的发生' },
-  { value: 'resolves', label: '回收', desc: 'A解决B的悬念' },
-  { value: 'contains', label: '包含', desc: 'A包含B' },
-  { value: 'conflicts', label: '冲突', desc: 'A与B产生冲突' },
-  { value: 'influences', label: '影响', desc: 'A影响B的发展' },
+  { value: 'causes', labelKey: 'conn.causes', descKey: 'conn.causes_desc' },
+  { value: 'follows', labelKey: 'conn.follows', descKey: 'conn.follows_desc' },
+  { value: 'parallels', labelKey: 'conn.parallels', descKey: 'conn.parallels_desc' },
+  { value: 'foreshadows', labelKey: 'conn.foreshadows', descKey: 'conn.foreshadows_desc' },
+  { value: 'resolves', labelKey: 'conn.resolves', descKey: 'conn.resolves_desc' },
+  { value: 'contains', labelKey: 'conn.contains', descKey: 'conn.contains_desc' },
+  { value: 'conflicts', labelKey: 'conn.conflicts', descKey: 'conn.conflicts_desc' },
+  { value: 'influences', labelKey: 'conn.influences', descKey: 'conn.influences_desc' },
 ];
 
 const CanvasView: React.FC = () => {
@@ -91,7 +90,7 @@ const CanvasView: React.FC = () => {
   }, [currentProject]);
 
   /** 拖拽结束 → 直接通过 updateBlock API 保存该节点的位置 */
-  const onNodeDragStop = useCallback(async (event: MouseEvent, node: Node) => {
+  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: Node) => {
     if (!currentProject) return;
     try {
       const res = await fetch(`/api/projects/${currentProject.id}/blocks/${node.id}`, {
@@ -100,10 +99,10 @@ const CanvasView: React.FC = () => {
         body: JSON.stringify({ canvas_x: node.position.x, canvas_y: node.position.y }),
       });
       if (!res.ok) {
-        showToast('位置保存失败', 'error');
+        showToast(t('canvas.position_save_failed'), 'error');
       }
     } catch {
-      showToast('位置保存出错', 'error');
+      showToast(t('canvas.position_save_error'), 'error');
     }
   }, [currentProject, showToast]);
 
@@ -190,8 +189,8 @@ const CanvasView: React.FC = () => {
                     style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13 }}
                     onClick={() => confirmConnection(ct.value)}
                   >
-                    <div style={{ fontWeight: 600 }}>{ct.label}</div>
-                    <div style={{ fontSize: 11, color: '#888' }}>{ct.desc}</div>
+                    <div style={{ fontWeight: 600 }}>{t(ct.labelKey)}</div>
+                    <div style={{ fontSize: 11, color: '#888' }}>{t(ct.descKey)}</div>
                   </button>
                 ))}
               </div>
@@ -200,7 +199,7 @@ const CanvasView: React.FC = () => {
                 style={{ width: '100%', marginTop: 8, color: '#E74C3C' }}
                 onClick={() => setPendingConnection(null)}
               >
-                ✕ 取消连线
+                ✕ {t('canvas.cancel_connection')}
               </button>
             </div>
           </div>
@@ -220,23 +219,23 @@ const CanvasView: React.FC = () => {
             setShowBlockEditor(true);
             setContextMenu(null);
           }}>
-            ✏️ 编辑
+            ✏️ {t('canvas.edit')}
           </div>
           <div className="context-menu-item" onClick={async () => {
             const { data: blockData } = contextMenu.node;
             setContextMenu(null);
             if (currentProject) {
-              showToast('正在复制...');
+              showToast(t('canvas.copying'));
               await useProjectStore.getState().addBlock(currentProject.id, {
                 type: blockData.type,
                 canvas_x: (blockData.canvas_x || 0) + 50,
                 canvas_y: (blockData.canvas_y || 0) + 50,
                 content: { ...(blockData.content || {}) },
               });
-              showToast('已复制块');
+              showToast(t('canvas.copy'));
             }
           }}>
-            📋 复制
+            📋 {t('canvas.copy')}
           </div>
           <div className="context-menu-item" onClick={async () => {
             const { id } = contextMenu.node;
@@ -245,30 +244,30 @@ const CanvasView: React.FC = () => {
               try {
                 await fetch(`/api/projects/${currentProject.id}/blocks/${id}/move-to-pool`, { method: 'POST' });
                 await useProjectStore.getState().loadProject(currentProject.id);
-                showToast('已移回块池');
-              } catch { showToast('操作失败', 'error'); }
+                showToast(t('canvas.moved_to_pool'));
+              } catch { showToast(t('canvas.operation_failed'), 'error'); }
             }
           }}>
-            📦 移回池
+            📦 {t('canvas.move_to_pool')}
           </div>
           <div className="context-menu-item" onClick={() => {
             const { id } = contextMenu.node;
             setAiFillDialog({ blockId: id, hint: '' });
             setContextMenu(null);
           }}>
-            🤖 AI填充
+            🤖 {t('canvas.ai_fill')}
           </div>
           <div className="context-menu-divider" />
           <div className="context-menu-item" style={{ color: '#E74C3C' }} onClick={async () => {
             const { id } = contextMenu.node;
             setContextMenu(null);
             if (currentProject) {
-              showToast('正在删除...');
+              showToast(t('canvas.deleting'));
               await useProjectStore.getState().removeBlock(currentProject.id, id);
-              showToast('已删除块');
+              showToast(t('app.block_deleted'));
             }
           }}>
-            🗑️ 删除
+            🗑️ {t('canvas.delete')}
           </div>
         </div>
       )}
@@ -281,18 +280,18 @@ const CanvasView: React.FC = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ fontSize: 11, color: '#888', padding: '6px 12px 4px', borderBottom: '1px solid var(--border-color)' }}>
-            🔗 {CONN_LABELS[edgeContextMenu.edge.data?.conn_type] || edgeContextMenu.edge.data?.conn_type || '连线'}
+            🔗 {t(`conn.${edgeContextMenu.edge.data?.conn_type}`) || edgeContextMenu.edge.data?.conn_type || t('canvas.connection_label')}
           </div>
           <div className="context-menu-item" style={{ color: '#E74C3C' }} onClick={async () => {
             const { id } = edgeContextMenu.edge;
             setEdgeContextMenu(null);
             if (currentProject) {
-              showToast('正在删除连线...');
+              showToast(t('canvas.deleting_connection'));
               await useProjectStore.getState().removeConnection(currentProject.id, id);
-              showToast('已删除连线');
+              showToast(t('canvas.connection_deleted'));
             }
           }}>
-            🗑️ 删除连线
+            🗑️ {t('canvas.delete_connection')}
           </div>
         </div>
       )}
@@ -302,7 +301,7 @@ const CanvasView: React.FC = () => {
         <div className="modal-overlay" onClick={() => setAiFillDialog(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <h3>🤖 AI 填充 - 生成条件（可选）</h3>
+              <h3>🤖 {t('canvas.ai_fill_title')}</h3>
               <button className="btn btn-sm btn-ghost" onClick={() => setAiFillDialog(null)}>✕</button>
             </div>
             <div className="modal-body" style={{ padding: '12px 16px' }}>
@@ -311,7 +310,7 @@ const CanvasView: React.FC = () => {
                 rows={4}
                 value={aiFillDialog.hint}
                 onChange={(e) => setAiFillDialog({ ...aiFillDialog, hint: e.target.value })}
-                placeholder={`例如：主角是沉默寡言的剑客，故事偏向黑暗写实风格...`}
+                placeholder={t('canvas.ai_fill_placeholder')}
                 style={{ width: '100%', marginBottom: 12 }}
               />
               <button
@@ -319,7 +318,7 @@ const CanvasView: React.FC = () => {
                 style={{ width: '100%' }}
                 onClick={async () => {
                   if (!currentProject) return;
-                  showToast('🤖 AI生成中...');
+                  showToast(t('canvas.ai_generating'));
                   const blockId = aiFillDialog.blockId;
                   const hint = aiFillDialog.hint;
                   setAiFillDialog(null);
@@ -332,16 +331,16 @@ const CanvasView: React.FC = () => {
                     if (res.ok) {
                       const data = await res.json();
                       await useProjectStore.getState().updateBlock(currentProject.id, blockId, { content: data.merged_content });
-                      showToast('✅ AI填充完成');
+                      showToast(t('canvas.ai_fill_complete'));
                     } else {
-                      showToast('AI填充失败', 'error');
+                      showToast(t('canvas.ai_fill_failed'), 'error');
                     }
                   } catch {
-                    showToast('AI填充出错', 'error');
+                    showToast(t('app.ai_fill_error'), 'error');
                   }
                 }}
               >
-                开始生成
+                {t('editor.ai_generate')}
               </button>
             </div>
           </div>

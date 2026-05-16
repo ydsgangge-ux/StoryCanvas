@@ -21,18 +21,28 @@ interface AuditIssue {
   suggestion: string;
 }
 
+interface ExtractedForeshadow {
+  title: string;
+  type: string;
+  description: string;
+  location: string;
+  urgency: string;
+  suggested_payoff_chapter: string | number;
+}
+
 interface AuditResult {
   passed: boolean;
   issues: AuditIssue[];
   critical_count: number;
   total_issues: number;
   overall_note?: string;
+  foreshadows_extracted?: ExtractedForeshadow[];
 }
 
-const PROSE_STYLES = ['标准文笔', '华丽辞藻', '朴实白描', '幽默诙谐', '冷峻犀利', '诗意浪漫', '简洁明快'];
-const POV_OPTIONS = ['', '多视角轮换', '限制第三人称', '全知叙事', '第一人称', '无焦点群像'];
-const DENSITY_OPTIONS = ['', '厚重史诗', '极简风格', '标准叙事', '意识流', '诗化散文'];
-const TONE_OPTIONS = ['冷峻克制', '道德灰度', '热血燃向'];
+const PROSE_STYLE_KEYS = ['style.standard', 'style.ornate', 'style.plain', 'style.humorous', 'style.austere', 'style.poetic', 'style.concise'];
+const POV_OPTION_KEYS = ['', 'pov.multi', 'pov.limited_third', 'pov.omniscient', 'pov.first_person', 'pov.ensemble'];
+const DENSITY_OPTION_KEYS = ['', 'density.epic', 'density.minimalist', 'density.standard', 'density.stream', 'density.prose_poetry'];
+const TONE_OPTION_KEYS = ['tone.austere_restrained', 'tone.moral_gray', 'tone.passionate'];
 
 const WritingPanel: React.FC = () => {
   const { t } = useT();
@@ -49,6 +59,7 @@ const WritingPanel: React.FC = () => {
   const [mode, setMode] = useState<'outline' | 'content' | 'audit'>('outline');
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [isAuditing, setIsAuditing] = useState(false);
+  const [isRevising, setIsRevising] = useState(false);
 
   // Rewrite state
   const [rewriteInstruction, setRewriteInstruction] = useState('');
@@ -109,17 +120,41 @@ const WritingPanel: React.FC = () => {
     if (!isGenerating) loadContent();
   }, [currentProject?.id, chapterNum, isGenerating]);
 
+  useEffect(() => {
+    if (!currentProject || mode !== 'audit') return;
+    const loadSavedAudit = async () => {
+      try {
+        const res = await fetch(`/api/projects/${currentProject.id}/audit/${chapterNum}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.audit) {
+            const audit = data.audit;
+            setAuditResult({
+              passed: audit.passed,
+              issues: audit.issues || [],
+              critical_count: audit.critical_count || 0,
+              total_issues: audit.total_issues || 0,
+              overall_note: audit.parsed?.overall_note || audit.overall_note || '',
+              foreshadows_extracted: audit.foreshadows_extracted || [],
+            });
+          }
+        }
+      } catch {}
+    };
+    loadSavedAudit();
+  }, [currentProject?.id, chapterNum, mode]);
+
   const selectedBlock = outlineBlocks.find((b) => b.id === selectedBlockId);
 
   const handleGenerateOutline = async () => {
     if (!currentProject) return;
     setIsGenerating(true);
     setOutput('');
-    setStage('正在生成细纲...');
+    setStage(t('writing.generating_outline'));
     await generateOutline(
       currentProject.id, chapterNum, additionalInstructions,
       (text) => setOutput((prev) => prev + text),
-      () => { setStage(null); setIsGenerating(false); showToast('细纲生成完成'); loadProject(currentProject.id); },
+      () => { setStage(null); setIsGenerating(false); showToast(t('writing.outline_complete')); loadProject(currentProject.id); },
       (err) => { setStage(null); setIsGenerating(false); showToast(err, 'error'); }
     );
   };
@@ -128,7 +163,7 @@ const WritingPanel: React.FC = () => {
     if (!currentProject) return;
     setIsGenerating(true);
     setOutput('');
-    setStage('正在收集相关块...');
+    setStage(t('writing.collecting_blocks'));
     let fullContent = '';
     const detailBlock = selectedBlock?.type === 'CHAPTER_DETAIL' ? selectedBlock.id : undefined;
     await generateChapterContent(
@@ -137,11 +172,11 @@ const WritingPanel: React.FC = () => {
       (text) => { fullContent += text; setOutput(fullContent); },
       (result) => {
         setStage(null); setIsGenerating(false);
-        showToast(`第${chapterNum}章生成完成，共${result.word_count}字`);
+        showToast(t('writing.chapter_generated', { num: chapterNum, count: result.word_count }));
         loadProject(currentProject.id);
       },
       (err) => { setStage(null); setIsGenerating(false); showToast(err, 'error'); },
-      (violations) => showToast(`发现${violations.length}处信息边界警告`, 'warning'),
+      (violations) => showToast(t('writing.info_boundary_warning', { count: violations.length }), 'warning'),
       detailBlock
     );
   };
@@ -150,7 +185,7 @@ const WritingPanel: React.FC = () => {
     if (!currentProject) return;
     setIsAuditing(true);
     setAuditResult(null);
-    showToast('正在审计...');
+    showToast(t('writing.auditing_status'));
     try {
       const res = await fetch(`/api/projects/${currentProject.id}/audit/${chapterNum}`, { method: 'POST' });
       if (res.ok) {
@@ -162,20 +197,79 @@ const WritingPanel: React.FC = () => {
           critical_count: audit.critical_count || 0,
           total_issues: audit.total_issues || 0,
           overall_note: audit.parsed?.overall_note || '',
+          foreshadows_extracted: audit.foreshadows_extracted || [],
         });
-        showToast(audit.passed ? '✅ 审计通过' : `发现${audit.critical_count}个严重问题`, audit.passed ? 'info' : 'warning');
+        showToast(audit.passed ? t('writing.audit_passed') : t('writing.audit_failed', { count: audit.critical_count }), audit.passed ? 'info' : 'warning');
       }
     } catch {
-      showToast('审计请求失败', 'error');
+      showToast(t('writing.audit_request_failed'), 'error');
     }
     setIsAuditing(false);
+  };
+
+  const handleReviseAll = async () => {
+    if (!currentProject) return;
+    setIsRevising(true);
+    showToast(t('writing.revising_all'));
+    try {
+      const res = await fetch(`/api/projects/${currentProject.id}/revise/${chapterNum}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.revised_content) {
+          setOutput(data.revised_content);
+          setAuditResult(null);
+          showToast(t('writing.revise_all_complete'));
+          loadProject(currentProject.id);
+        } else {
+          showToast(data.message || t('writing.no_revision_needed'));
+        }
+      } else {
+        showToast(t('writing.revise_failed'), 'error');
+      }
+    } catch {
+      showToast(t('writing.revise_error'), 'error');
+    }
+    setIsRevising(false);
+  };
+
+  const handleCreateForeshadowBlock = async (fs: ExtractedForeshadow) => {
+    if (!currentProject) return;
+    const blockType = fs.type === 'hook' ? 'HOOK' : 'FORESHADOW';
+    const payoff = fs.suggested_payoff_chapter ? Number(fs.suggested_payoff_chapter) : '';
+    try {
+      await useProjectStore.getState().addBlock(currentProject.id, {
+        type: blockType,
+        canvas_x: 200 + Math.random() * 300,
+        canvas_y: 200 + Math.random() * 200,
+        content: {
+          title: fs.title,
+          description: fs.description,
+          hint_content: fs.location,
+          urgency: fs.urgency,
+          status: 'planted',
+          plant_chapter: chapterNum,
+          payoff_chapter: payoff || '',
+        },
+      });
+      showToast(t('writing.foreshadow_block_created', { title: fs.title }));
+    } catch {
+      showToast(t('writing.foreshadow_block_failed'), 'error');
+    }
+  };
+
+  const handleCreateAllForeshadows = async () => {
+    if (!currentProject || !auditResult?.foreshadows_extracted?.length) return;
+    for (const fs of auditResult.foreshadows_extracted) {
+      await handleCreateForeshadowBlock(fs);
+    }
+    showToast(t('writing.all_foreshadows_created', { count: auditResult.foreshadows_extracted.length }));
   };
 
   /** AI改写正文（支持选中部分 + 上下文定点修改） */
   const handleRewrite = async (issue?: AuditIssue) => {
     if (!currentProject || !output.trim()) return;
     setIsRewriting(true);
-    showToast('正在AI修改...');
+    showToast(t('writing.rewriting'));
     try {
       // 获取选中文本及上下文
       let selectedText = '';
@@ -193,7 +287,7 @@ const WritingPanel: React.FC = () => {
         }
       }
 
-      const body: any = { chapter_num: chapterNum, instruction: rewriteInstruction || '请优化这段正文' };
+      const body: any = { chapter_num: chapterNum, instruction: rewriteInstruction || t('writing.rewrite_placeholder') };
       if (selectedText) {
         body.selected_text = selectedText;
         body.context_before = contextBefore;
@@ -222,12 +316,12 @@ const WritingPanel: React.FC = () => {
           // 全文改写：直接替换全部内容
           setOutput(data.revised_content);
         }
-        showToast(selectedText ? '✅ 选中部分已修改' : '✅ AI修改完成');
+        showToast(selectedText ? t('writing.segment_revised') : t('writing.rewrite_complete'));
       } else {
-        showToast('修改失败', 'error');
+        showToast(t('writing.rewrite_failed'), 'error');
       }
     } catch {
-      showToast('修改出错', 'error');
+      showToast(t('writing.rewrite_error'), 'error');
     }
     setIsRewriting(false);
   };
@@ -242,13 +336,13 @@ const WritingPanel: React.FC = () => {
         body: JSON.stringify({ chapter_num: chapterNum, outline_confirmed: true, save_only: true, content: output }),
       });
       if (res.ok) {
-        showToast('✅ 正文已保存');
+        showToast(t('writing.content_saved'));
         loadProject(currentProject.id);
       } else {
-        showToast('保存失败', 'error');
+        showToast(t('writing.save_failed'), 'error');
       }
     } catch {
-      showToast('保存出错', 'error');
+      showToast(t('writing.save_error'), 'error');
     }
   };
 
@@ -269,12 +363,12 @@ const WritingPanel: React.FC = () => {
         }),
       });
       if (res.ok) {
-        showToast('写作风格已保存');
+        showToast(t('writing.style_saved'));
       } else {
-        showToast('保存失败', 'error');
+        showToast(t('writing.save_failed'), 'error');
       }
     } catch {
-      showToast('保存出错', 'error');
+      showToast(t('writing.save_error'), 'error');
     }
   };
 
@@ -285,11 +379,11 @@ const WritingPanel: React.FC = () => {
   return (
     <div className="panel" style={{ width: '50%', minWidth: 420 }}>
       <div className="panel-header">
-        <span>写作面板</span>
+        <span>{t('writing.title')}</span>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button className={`btn btn-sm ${mode === 'outline' ? 'btn-primary' : ''}`} onClick={() => setMode('outline')}>细纲</button>
-          <button className={`btn btn-sm ${mode === 'content' ? 'btn-primary' : ''}`} onClick={() => setMode('content')}>正文</button>
-          <button className={`btn btn-sm ${mode === 'audit' ? 'btn-primary' : ''}`} onClick={() => setMode('audit')}>审计</button>
+          <button className={`btn btn-sm ${mode === 'outline' ? 'btn-primary' : ''}`} onClick={() => setMode('outline')}>{t('writing.outline')}</button>
+          <button className={`btn btn-sm ${mode === 'content' ? 'btn-primary' : ''}`} onClick={() => setMode('content')}>{t('writing.content')}</button>
+          <button className={`btn btn-sm ${mode === 'audit' ? 'btn-primary' : ''}`} onClick={() => setMode('audit')}>{t('writing.audit')}</button>
         </div>
       </div>
       <div className="panel-body">
@@ -297,19 +391,19 @@ const WritingPanel: React.FC = () => {
 
           {/* ─── 章节块选择器 ─────────────────── */}
           <div style={{ marginBottom: 12 }}>
-            <label className="form-label">选择章节块</label>
+            <label className="form-label">{t('writing.select_chapter_block')}</label>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
               {outlineBlocks.length === 0 ? (
                 <span style={{ fontSize: 12, color: '#6c6c80' }}>
-                  还没有章节块，先在画布上添加「章节细纲」或「章节大纲」块
+                  {t('writing.no_chapter_blocks')}
                 </span>
               ) : (
                 outlineBlocks.map((ob) => (
                   <button key={ob.id} className={`btn btn-sm ${selectedBlockId === ob.id ? 'btn-primary' : ''}`}
                     style={{ fontSize: 11, borderLeft: `3px solid ${ob.type === 'CHAPTER_DETAIL' ? '#50C878' : '#4A90D9'}` }}
                     onClick={() => { setSelectedBlockId(ob.id); setChapterNum(ob.chapter_number); }}
-                    title={ob.type === 'CHAPTER_DETAIL' ? '章节细纲（含场景）' : '章节大纲'}>
-                    {ob.type === 'CHAPTER_DETAIL' ? '📄' : '📋'} 第{ob.chapter_number}章 {ob.title?.substring(0, 8) || ''}
+                    title={ob.type === 'CHAPTER_DETAIL' ? t('writing.chapter_detail') : t('writing.chapter_outline_type')}>
+                    {ob.type === 'CHAPTER_DETAIL' ? '📄' : '📋'} {t('writing.chapter')}{ob.chapter_number} {ob.title?.substring(0, 8) || ''}
                   </button>
                 ))
               )}
@@ -318,10 +412,10 @@ const WritingPanel: React.FC = () => {
               <div style={{ fontSize: 11, color: '#a0a0b0', marginTop: 4, padding: '4px 8px', background: 'var(--bg-card)', borderRadius: 4,
                 borderLeft: `3px solid ${selectedBlock.type === 'CHAPTER_DETAIL' ? '#50C878' : '#4A90D9'}` }}>
                 <span style={{ color: selectedBlock.type === 'CHAPTER_DETAIL' ? '#50C878' : '#4A90D9', fontWeight: 600 }}>
-                  {selectedBlock.type === 'CHAPTER_DETAIL' ? '章节细纲' : '章节大纲'}
-                </span>: {selectedBlock.summary?.substring(0, 120) || '无摘要'}
+                  {selectedBlock.type === 'CHAPTER_DETAIL' ? t('writing.chapter_detail') : t('writing.chapter_outline_type')}
+                </span>: {selectedBlock.summary?.substring(0, 120) || t('writing.no_summary')}
                 {selectedBlock.type === 'CHAPTER_OUTLINE' && mode === 'content' && (
-                  <span style={{ color: '#F39C12' }}> （建议选「章节细纲」块来生成正文）</span>
+                  <span style={{ color: '#F39C12' }}> （{t('writing.suggest_detail')}）</span>
                 )}
               </div>
             )}
@@ -329,7 +423,7 @@ const WritingPanel: React.FC = () => {
 
           {/* ─── 章节号 ─────────────────────────── */}
           <div className="chapter-selector" style={{ marginBottom: 8 }}>
-            <label className="form-label" style={{ margin: 0 }}>章节号:</label>
+            <label className="form-label" style={{ margin: 0 }}>{t('writing.chapter_number')}:</label>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <button className="btn btn-sm btn-ghost" onClick={() => setChapterNum(Math.max(1, chapterNum - 1))}>←</button>
               <input className="form-input" type="number" value={chapterNum}
@@ -342,10 +436,10 @@ const WritingPanel: React.FC = () => {
           {/* ─── 额外指令 ───────────────────────── */}
           {mode !== 'audit' && (
             <div className="form-group">
-              <label className="form-label">额外指令</label>
+              <label className="form-label">{t('writing.extra_instructions')}</label>
               <textarea className="form-textarea" rows={2} value={additionalInstructions}
                 onChange={(e) => setAdditionalInstructions(e.target.value)}
-                placeholder="给AI额外的写作指令..." disabled={isGenerating} />
+                placeholder={t('writing.extra_instructions_placeholder')} disabled={isGenerating} />
             </div>
           )}
 
@@ -354,52 +448,52 @@ const WritingPanel: React.FC = () => {
             <div style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
               background: 'var(--bg-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               onClick={() => setIsStyleExpanded(!isStyleExpanded)}>
-              <span>🎨 写作风格</span>
-              <span style={{ fontSize: 10, color: '#888' }}>{isStyleExpanded ? '收起 ▲' : '展开 ▼'}</span>
+              <span>🎨 {t('writing.writing_style')}</span>
+              <span style={{ fontSize: 10, color: '#888' }}>{isStyleExpanded ? t('writing.collapse') + ' ▲' : t('writing.expand') + ' ▼'}</span>
             </div>
             {isStyleExpanded && (
               <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div>
-                  <label className="form-label">文笔风格</label>
+                  <label className="form-label">{t('writing.prose_style')}</label>
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
-                    {PROSE_STYLES.map((s) => (
+                    {PROSE_STYLE_KEYS.map((s) => (
                       <button key={s} className={`btn btn-sm ${proseStyle === s ? 'btn-primary' : ''}`}
-                        onClick={() => setProseStyle(proseStyle === s ? '' : s)} style={{ fontSize: 11 }}>{s}</button>
+                        onClick={() => setProseStyle(proseStyle === s ? '' : s)} style={{ fontSize: 11 }}>{t(s)}</button>
                     ))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <label className="form-label">叙事视角</label>
+                    <label className="form-label">{t('writing.narrative_pov')}</label>
                     <select className="form-input" value={narrativePov}
                       onChange={(e) => setNarrativePov(e.target.value)} style={{ fontSize: 11, marginTop: 2 }}>
-                      {POV_OPTIONS.map((o) => <option key={o} value={o}>{o || '(默认)'}</option>)}
+                      {POV_OPTION_KEYS.map((o) => <option key={o} value={o}>{o ? t(o) : t('writing.default_option')}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label className="form-label">语言密度</label>
+                    <label className="form-label">{t('writing.language_density')}</label>
                     <select className="form-input" value={languageDensity}
                       onChange={(e) => setLanguageDensity(e.target.value)} style={{ fontSize: 11, marginTop: 2 }}>
-                      {DENSITY_OPTIONS.map((o) => <option key={o} value={o}>{o || '(默认)'}</option>)}
+                      {DENSITY_OPTION_KEYS.map((o) => <option key={o} value={o}>{o ? t(o) : t('writing.default_option')}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="form-label">基调标签</label>
+                  <label className="form-label">{t('writing.tone_tags')}</label>
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
-                    {TONE_OPTIONS.map((t) => (
-                      <button key={t} className={`btn btn-sm ${tone.includes(t) ? 'btn-primary' : ''}`}
-                        onClick={() => toggleTone(t)} style={{ fontSize: 11 }}>{t}</button>
+                    {TONE_OPTION_KEYS.map((tk) => (
+                      <button key={tk} className={`btn btn-sm ${tone.includes(tk) ? 'btn-primary' : ''}`}
+                        onClick={() => toggleTone(tk)} style={{ fontSize: 11 }}>{t(tk)}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="form-label">自定义指令</label>
+                  <label className="form-label">{t('writing.custom_instructions')}</label>
                   <textarea className="form-textarea" rows={2} value={customInstructions}
                     onChange={(e) => setCustomInstructions(e.target.value)}
-                    placeholder="额外的写作风格要求..." style={{ fontSize: 11 }} />
+                    placeholder={t('writing.custom_instructions_placeholder')} style={{ fontSize: 11 }} />
                 </div>
-                <button className="btn btn-sm btn-primary" onClick={handleSaveStyle} style={{ alignSelf: 'flex-end' }}>保存风格</button>
+                <button className="btn btn-sm btn-primary" onClick={handleSaveStyle} style={{ alignSelf: 'flex-end' }}>{t('writing.save_style')}</button>
               </div>
             )}
           </div>
@@ -410,11 +504,11 @@ const WritingPanel: React.FC = () => {
               <button className="btn btn-primary"
                 onClick={mode === 'outline' ? handleGenerateOutline : handleGenerateContent}
                 disabled={isGenerating || !currentProject}>
-                {isGenerating ? <><span className="loading-spinner" /> 生成中...</> : (mode === 'outline' ? '生成细纲' : '生成正文')}
+                {isGenerating ? <><span className="loading-spinner" /> {t('writing.generating')}</> : (mode === 'outline' ? t('writing.generate_outline') : t('writing.generate_content'))}
               </button>
-              <button className="btn" onClick={() => { setOutput(''); setStage(null); }} disabled={isGenerating}>清空</button>
+              <button className="btn" onClick={() => { setOutput(''); setStage(null); }} disabled={isGenerating}>{t('writing.clear')}</button>
               {output && mode === 'content' && (
-                <button className="btn btn-sm" onClick={handleSaveContent} style={{ color: '#50C878' }}>💾 保存正文</button>
+                <button className="btn btn-sm" onClick={handleSaveContent} style={{ color: '#50C878' }}>💾 {t('writing.save_content')}</button>
               )}
             </div>
           )}
@@ -423,9 +517,15 @@ const WritingPanel: React.FC = () => {
           {mode === 'audit' && (
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary" onClick={handleAudit} disabled={isAuditing || !currentProject}>
-                {isAuditing ? '审计中...' : '🔍 运行审计'}
+                {isAuditing ? t('writing.auditing') : '🔍 ' + t('writing.run_audit_btn')}
               </button>
-              <button className="btn" onClick={() => { setOutput(''); setStage(null); setAuditResult(null); }} disabled={isGenerating}>清空</button>
+              {auditResult && !auditResult.passed && (
+                <button className="btn" style={{ background: 'linear-gradient(135deg, #50C878, #4A90D9)', color: '#fff', border: 'none' }}
+                  onClick={handleReviseAll} disabled={isRevising || !currentProject}>
+                  {isRevising ? <><span className="loading-spinner" /> {t('writing.revising_all')}</> : '🤖 ' + t('writing.revise_all_btn')}
+                </button>
+              )}
+              <button className="btn" onClick={() => { setOutput(''); setStage(null); setAuditResult(null); }} disabled={isGenerating}>{t('writing.clear')}</button>
             </div>
           )}
 
@@ -438,16 +538,16 @@ const WritingPanel: React.FC = () => {
               <textarea ref={outputRef} className="form-textarea generation-output"
                 style={{ flex: 1, minHeight: 200, whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.7 }}
                 value={output} onChange={(e) => setOutput(e.target.value)}
-                placeholder={mode === 'outline' ? '点击「生成细纲」开始创作' : '点击「生成正文」开始创作\n\n选中某段文字再点AI修改可以定点修改'}
+                placeholder={mode === 'outline' ? t('writing.generate_outline') : t('writing.generate_content')}
                 disabled={isGenerating} />
               {output && mode === 'content' && (
                 <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                   <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={rewriteInstruction}
                     onChange={(e) => setRewriteInstruction(e.target.value)}
-                    placeholder="输入修改要求，如：让对话更自然、增加环境描写..." disabled={isRewriting} />
+                    placeholder={t('writing.extra_instructions_placeholder')} disabled={isRewriting} />
                   <button className="btn btn-sm" style={{ background: 'linear-gradient(135deg, #4A90D9, #7B68EE)', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
                     onClick={() => handleRewrite()} disabled={isRewriting || !output.trim()}>
-                    {isRewriting ? '修改中...' : '🤖 AI修改'}
+                    {isRewriting ? t('writing.generating') : '🤖 AI ' + t('canvas.edit')}
                   </button>
                 </div>
               )}
@@ -460,8 +560,8 @@ const WritingPanel: React.FC = () => {
               <div style={{ padding: '6px 10px', borderRadius: 6, marginBottom: 8, fontSize: 13, fontWeight: 600,
                 background: auditResult.passed ? 'rgba(80,200,120,0.15)' : 'rgba(231,76,60,0.15)',
                 color: auditResult.passed ? '#50C878' : '#E74C3C' }}>
-                {auditResult.passed ? '✅ 审计通过' : `❌ 发现 ${auditResult.critical_count} 个严重问题`}
-                {auditResult.issues.length > 0 && `（共 ${auditResult.total_issues} 条）`}
+                {auditResult.passed ? '✅ ' + t('writing.audit_passed') : `❌ ${t('writing.audit_failed', { count: auditResult.critical_count })}`}
+                {auditResult.issues.length > 0 && t('writing.audit_total_issues', { count: auditResult.total_issues })}
               </div>
               {auditResult.issues.map((issue, i) => (
                 <div key={i} style={{ padding: '8px 10px', marginBottom: 6, borderRadius: 6,
@@ -478,10 +578,10 @@ const WritingPanel: React.FC = () => {
                     <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 8px', color: '#50C878', flexShrink: 0 }}
                       onClick={async () => {
                         setMode('content');
-                        setRewriteInstruction(issue.suggestion || `修复: ${issue.description}`);
-                        showToast('切换到正文模式，点击AI修改');
+                        setRewriteInstruction(issue.suggestion || `${t('canvas.edit')}: ${issue.description}`);
+                        showToast(t('writing.suggest_detail'));
                       }}>
-                      🤖 AI修复
+                      🤖 AI {t('canvas.edit')}
                     </button>
                   </div>
                   <div style={{ fontSize: 12, color: '#ccc', marginBottom: 2 }}>{issue.description}</div>
@@ -492,6 +592,47 @@ const WritingPanel: React.FC = () => {
               {auditResult.overall_note && (
                 <div style={{ fontSize: 12, color: '#a0a0b0', marginTop: 6, padding: 8, borderTop: '1px solid var(--border-color)' }}>
                   {auditResult.overall_note}
+                </div>
+              )}
+
+              {auditResult.foreshadows_extracted && auditResult.foreshadows_extracted.length > 0 && (
+                <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 6, background: 'rgba(243,156,18,0.08)', border: '1px solid rgba(243,156,18,0.3)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#F39C12' }}>◈ {t('writing.foreshadows_extracted')}</span>
+                    <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 8px', background: '#F39C12', color: '#fff', border: 'none' }}
+                      onClick={handleCreateAllForeshadows}>
+                      + {t('writing.create_all_foreshadows')}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>
+                    {t('writing.foreshadows_extracted_hint', { count: auditResult.foreshadows_extracted.length })}
+                  </div>
+                  {auditResult.foreshadows_extracted.map((fs, i) => (
+                    <div key={i} style={{ padding: '6px 8px', marginBottom: 4, borderRadius: 4, background: 'var(--bg-card)', borderLeft: `3px solid ${fs.type === 'hook' ? '#E8873A' : '#F39C12'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>
+                          {fs.type === 'hook' ? '🔗' : '◈'} {fs.title}
+                        </span>
+                        <button className="btn btn-sm" style={{ fontSize: 10, padding: '1px 6px', color: '#F39C12' }}
+                          onClick={() => handleCreateForeshadowBlock(fs)}>
+                          + {t('writing.create_block')}
+                        </button>
+                      </div>
+                      {fs.description && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{fs.description}</div>}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 3 }}>
+                        {fs.urgency && (
+                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: fs.urgency === 'high' ? '#E74C3C' : fs.urgency === 'medium' ? '#F39C12' : 'var(--bg-secondary)', color: '#fff' }}>
+                            {fs.urgency}
+                          </span>
+                        )}
+                        {fs.suggested_payoff_chapter && (
+                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                            → {t('writing.payoff_chapter')}: {fs.suggested_payoff_chapter}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

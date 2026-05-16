@@ -2,18 +2,18 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 echo ========================================
-echo   StoryCanvas - 安装依赖
+echo   StoryCanvas - Install Dependencies
 echo ========================================
 echo.
 
 :: Copy .env if not exists
 if not exist .env (
     copy .env.example .env
-    echo ✓ 已创建 .env 配置文件，请编辑 API Key
+    echo [OK] .env file created, please edit your API Key
 )
 
-:: Detect python command
-echo 检测 Python...
+:: ---------- Python detection ----------
+echo Detecting Python...
 python --version >nul 2>&1
 if %errorlevel% equ 0 (
     set PYTHON=python
@@ -22,34 +22,55 @@ if %errorlevel% equ 0 (
     if %errorlevel% equ 0 (
         set PYTHON=py
     ) else (
-        echo ❌ 未找到 Python，请安装 Python 3.11+
+        echo [ERROR] Python not found, please install Python 3.11+
         pause
         exit /b 1
     )
 )
-echo 使用 !PYTHON!
+echo Using !PYTHON!
 
-:: Install Python dependencies
+:: ---------- Node.js detection ----------
+echo Detecting Node.js...
+node --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js not found, please install Node.js 18+ from https://nodejs.org
+    pause
+    exit /b 1
+)
+for /f "tokens=*" %%i in ('node --version') do set NODE_VER=%%i
+echo Using !NODE_VER!
+
+:: ---------- Python dependencies ----------
 echo.
-echo [1/2] 安装 Python 依赖...
-echo   如果下载慢，可手动执行：pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r backend\requirements.txt
+echo [1/2] Installing Python dependencies...
+echo    If download is slow, try: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r backend\requirements.txt
 !PYTHON! -m pip install -r backend\requirements.txt
-echo ✓ Python 依赖安装完成
+if %errorlevel% neq 0 (
+    echo [ERROR] Python dependencies installation failed
+    pause
+    exit /b 1
+)
+echo [OK] Python dependencies installed
 
-:: Install Node.js dependencies
+:: ---------- Frontend dependencies ----------
 echo.
-echo [2/2] 安装前端依赖...
+echo [2/2] Installing frontend dependencies...
 cd frontend
 call npm install
+if %errorlevel% neq 0 (
+    echo [ERROR] Frontend dependencies installation failed
+    pause
+    exit /b 1
+)
 cd ..
-echo ✓ 前端依赖安装完成
+echo [OK] Frontend dependencies installed
 
 echo.
 echo ========================================
-echo   安装完成！
+echo   Installation Complete!
 echo.
-echo   启动方式：
-echo   1. 编辑 .env 文件配置 LLM API Key
-echo   2. 运行 start.bat 启动系统
+echo   How to start:
+echo   1. Edit .env file to configure LLM API Key
+echo   2. Run start.bat to launch the system
 echo ========================================
 pause

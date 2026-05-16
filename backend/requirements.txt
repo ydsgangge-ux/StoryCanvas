@@ -1,7 +1,7 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.3
-aiosqlite==0.20.0
-httpx==0.28.1
-python-dotenv==1.0.1
-sse-starlette==2.2.1
+fastapi>=0.115.6
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.3
+aiosqlite>=0.20.0
+httpx>=0.28.1
+python-dotenv>=1.0.1
+sse-starlette>=2.2.1

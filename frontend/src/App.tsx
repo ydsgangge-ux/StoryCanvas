@@ -16,7 +16,7 @@ import { useUIStore } from './store/uiStore';
 import * as exportApi from './api/export_import';
 import * as snapshotsApi from './api/snapshots';
 import * as blocksApi from './api/blocks';
-import { BLOCK_LABELS, BLOCK_COLORS } from './types/blocks';
+import { BLOCK_COLORS } from './types/blocks';
 import { ViewMode } from './types/canvas';
 import { useT } from './i18n/useT';
 import { getCurrentLang } from './i18n';
@@ -57,7 +57,7 @@ const App: React.FC = () => {
 
   const handleCreateProject = async () => {
     if (!newProjectTitle.trim()) {
-      showToast('请输入项目名称', 'warning');
+      showToast(t('app.project_name_required'), 'warning');
       return;
     }
     const id = await createProject(newProjectTitle.trim(), newProjectGenre || undefined);
@@ -67,7 +67,7 @@ const App: React.FC = () => {
       setNewProjectGenre('');
       await loadProject(id);
       setShowStoryCardPicker(true);
-      showToast('项目创建成功');
+      showToast(t('app.project_created'));
     }
   };
 
@@ -103,7 +103,7 @@ const App: React.FC = () => {
       const { blockId } = (e as CustomEvent).detail;
       if (currentProject) {
         useProjectStore.getState().removeBlock(currentProject.id, blockId);
-        showToast('已删除块');
+        showToast(t('app.block_deleted'));
       }
     };
     const handleDuplicate = (e: Event) => {
@@ -115,7 +115,7 @@ const App: React.FC = () => {
           canvas_y: blockData.canvas_y + 50,
           content: { ...blockData.content },
         });
-        showToast('已复制块');
+        showToast(t('app.block_duplicated'));
       }
     };
     const handleEdit = (e: Event) => {
@@ -126,7 +126,7 @@ const App: React.FC = () => {
     const handleAIFill = async (e: Event) => {
       const { blockId } = (e as CustomEvent).detail;
       if (currentProject) {
-        showToast('AI生成中...');
+        showToast(t('app.ai_generating'));
         try {
           const res = await fetch(`/api/projects/${currentProject.id}/generate/block-content`, {
             method: 'POST',
@@ -141,12 +141,12 @@ const App: React.FC = () => {
             await useProjectStore.getState().updateBlock(currentProject.id, blockId, {
               content: data.merged_content,
             });
-            showToast(`AI填充完成: ${fieldCount} 个字段`);
+            showToast(t('app.ai_fill_complete', { count: fieldCount }));
           } else {
-            showToast('AI填充失败', 'error');
+            showToast(t('app.ai_fill_failed'), 'error');
           }
         } catch {
-          showToast('AI填充出错', 'error');
+          showToast(t('app.ai_fill_error'), 'error');
         }
       }
     };
@@ -174,7 +174,7 @@ const App: React.FC = () => {
       content: {},
     });
     setSaveStatus('saved');
-    showToast(`已添加 ${BLOCK_LABELS[type] || type} 块`);
+    showToast(t('app.block_added', { type: t(`block.${type}`) || type }));
   };
 
   // Export handlers
@@ -208,7 +208,7 @@ const App: React.FC = () => {
       setImportFile(file);
       setShowImportDialog(true);
     } catch (err: any) {
-      showToast(err.message || '文件解析失败', 'error');
+      showToast(err.message || t('app.file_parse_failed'), 'error');
     }
   };
 
@@ -217,7 +217,7 @@ const App: React.FC = () => {
     setImporting(true);
     try {
       const result = await exportApi.importProject(importFile);
-      showToast(`导入成功: ${result.title}`);
+      showToast(t('app.import_success', { title: result.title }));
       setShowImportDialog(false);
       setImportFile(null);
       setImportPreviewData(null);
@@ -227,7 +227,7 @@ const App: React.FC = () => {
         await loadProject(result.project_id);
       }
     } catch (err: any) {
-      showToast(err.message || '导入失败', 'error');
+      showToast(err.message || t('app.import_failed'), 'error');
     }
     setImporting(false);
   };
@@ -288,12 +288,12 @@ const App: React.FC = () => {
         {showProjectList && (
           <div className="modal-overlay" onClick={() => setShowProjectList(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h2>项目列表</h2>
+              <h2>{t('project.list')}</h2>
               {projects.map((p) => (
                 <div key={p.id} className="project-list-item" onClick={() => handleSelectProject(p.id)}>
                   <div className="project-info">
                     <div className="project-title">{p.title}</div>
-                    <div className="project-meta">{p.genre || '未分类'} · 创建于 {p.created_at?.substring(0, 10)}</div>
+                    <div className="project-meta">{p.genre || t('app.uncategorized')} · {t('app.created_on')} {p.created_at?.substring(0, 10)}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
@@ -301,15 +301,15 @@ const App: React.FC = () => {
                       style={{ color: '#E74C3C', fontSize: 11 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`确定删除项目「${p.title}」？此操作不可撤销。`)) {
+                        if (confirm(t('project.delete_confirm', { title: p.title }))) {
                           useProjectStore.getState().deleteProject(p.id);
-                          showToast('已删除项目');
+                          showToast(t('app.project_deleted'));
                         }
                       }}
                     >
-                      删除
+                      {t('common.delete')}
                     </button>
-                    <span style={{ color: '#4A90D9', fontSize: 12 }}>打开 →</span>
+                    <span style={{ color: '#4A90D9', fontSize: 12 }}>{t('app.open_project')}</span>
                   </div>
                 </div>
               ))}
@@ -320,26 +320,26 @@ const App: React.FC = () => {
         {showCreateForm && (
           <div className="modal-overlay" onClick={() => setShowCreateForm(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h2>新建项目</h2>
+              <h2>{t('app.new_project')}</h2>
               <div className="create-project-form">
                 <div className="form-group">
-                  <label className="form-label">项目名称 *</label>
-                  <input className="form-input" value={newProjectTitle} onChange={(e) => setNewProjectTitle(e.target.value)} placeholder="给你的故事起个名字" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} />
+                  <label className="form-label">{t('app.project_name_label')}</label>
+                  <input className="form-input" value={newProjectTitle} onChange={(e) => setNewProjectTitle(e.target.value)} placeholder={t('app.project_name_placeholder')} autoFocus onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">类型（可选）</label>
-                  <input className="form-input" value={newProjectGenre} onChange={(e) => setNewProjectGenre(e.target.value)} placeholder="如：奇幻、科幻、悬疑..." />
+                  <label className="form-label">{t('app.genre_optional')}</label>
+                  <input className="form-input" value={newProjectGenre} onChange={(e) => setNewProjectGenre(e.target.value)} placeholder={t('app.genre_placeholder')} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <button className="btn" onClick={() => setShowCreateForm(false)}>取消</button>
-                  <button className="btn btn-primary" onClick={handleCreateProject}>创建项目</button>
+                  <button className="btn" onClick={() => setShowCreateForm(false)}>{t('common.cancel')}</button>
+                  <button className="btn btn-primary" onClick={handleCreateProject}>{t('app.create_project')}</button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {showLLMSettings && <LLMSettingsModal onClose={() => setShowLLMSettings(false)} onSave={() => showToast('设置已保存')} />}
+        {showLLMSettings && <LLMSettingsModal onClose={() => setShowLLMSettings(false)} onSave={() => showToast(t('app.settings_saved'))} />}
         {toastMessage && (
           <div className="toast-container"><div className={`toast ${toastType}`}>{toastMessage}</div></div>
         )}
@@ -360,7 +360,7 @@ const App: React.FC = () => {
           fontSize: 24, fontWeight: 700, color: '#4A90D9',
           pointerEvents: 'none',
         }}>
-          释放以导入
+          {t('app.drop_to_import')}
         </div>
       )}
 
@@ -377,7 +377,7 @@ const App: React.FC = () => {
             animation: saveStatus === 'saving' ? 'pulse 1s infinite' : 'none',
           }} />
           <span style={{ fontSize: 11, color: saveStatus === 'saved' ? '#50C878' : saveStatus === 'saving' ? '#F39C12' : '#E74C3C' }}>
-            {saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '保存中...' : '保存失败'}
+            {saveStatus === 'saved' ? t('common.saved') : saveStatus === 'saving' ? t('common.saving') : t('app.save_failed')}
           </span>
           <button className="btn btn-sm btn-ghost" style={{ fontSize: 10, padding: '2px 6px', marginLeft: 4 }}
             onClick={async () => {
@@ -393,34 +393,34 @@ const App: React.FC = () => {
                 setSaveStatus('failed');
               }
             }}
-            title="手动保存">💾</button>
+            title={t('app.manual_save')}>💾</button>
         </div>
 
         <div style={{ display: 'flex', gap: 4, marginLeft: 16, alignItems: 'center' }}>
-          <button className={`btn btn-sm ${activeTab === 'canvas' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('canvas')}>画布</button>
-          <button className={`btn btn-sm ${activeTab === 'writing' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('writing')}>写作</button>
+          <button className={`btn btn-sm ${activeTab === 'canvas' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('canvas')}>{t('header.canvas')}</button>
+          <button className={`btn btn-sm ${activeTab === 'writing' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('writing')}>{t('header.writing')}</button>
         </div>
         <div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
           <select className="form-select" value={viewMode} onChange={(e) => setViewMode(e.target.value as ViewMode)} style={{ fontSize: 12, padding: '4px 8px' }}>
-            <option value="overview">全览模式</option>
-            <option value="character_focus">角色聚焦</option>
-            <option value="timeline">时间线模式</option>
-            <option value="foreshadow_track">伏笔追踪</option>
-            <option value="progress">进度模式</option>
-            <option value="screenplay">剧本模式</option>
+            <option value="overview">{t('view.overview')}</option>
+            <option value="character_focus">{t('view.character_focus')}</option>
+            <option value="timeline">{t('view.timeline')}</option>
+            <option value="foreshadow_track">{t('view.foreshadow_track')}</option>
+            <option value="progress">{t('view.progress')}</option>
+            <option value="screenplay">{t('view.screenplay')}</option>
           </select>
         </div>
 
         <div className="header-actions">
           {/* Snapshot/History */}
-          <button className="btn btn-sm" onClick={() => setShowHistoryPanel(!showHistoryPanel)} title="快照历史">
+          <button className="btn btn-sm" onClick={() => setShowHistoryPanel(!showHistoryPanel)} title={t('app.snapshot_history')}>
             ⏱
           </button>
 
           {/* Export dropdown */}
           <div style={{ position: 'relative' }}>
-            <button className="btn btn-sm" onClick={() => setShowExportMenu(!showExportMenu)} title="导出">
-              📤 导出
+            <button className="btn btn-sm" onClick={() => setShowExportMenu(!showExportMenu)} title={t('header.export')}>
+              📤 {t('app.export_label')}
             </button>
             {showExportMenu && (
               <>
@@ -431,9 +431,9 @@ const App: React.FC = () => {
                   borderRadius: 6, padding: 4, minWidth: 160, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                 }}>
                   {[
-                    { key: 'storycanvas', icon: '📦', label: '.storycanvas (完整)' },
-                    { key: 'canvas-json', icon: '📋', label: 'canvas.json (画布)' },
-                    { key: 'markdown', icon: '📝', label: 'Markdown (全文)' },
+                    { key: 'storycanvas', icon: '📦', label: t('export.storycanvas') },
+                    { key: 'canvas-json', icon: '📋', label: t('export.canvas_json') },
+                    { key: 'markdown', icon: '📝', label: t('export.markdown') },
                   ].map((item) => (
                     <div key={item.key} onClick={() => handleExport(item.key)}
                       style={{ padding: '7px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}
@@ -495,7 +495,7 @@ const App: React.FC = () => {
 
       {showStoryCardPicker && <StoryCardPicker projectId={currentProject.id} onClose={() => setShowStoryCardPicker(false)} />}
 
-      {showLLMSettings && <LLMSettingsModal onClose={() => setShowLLMSettings(false)} onSave={() => showToast('设置已保存')} />}
+      {showLLMSettings && <LLMSettingsModal onClose={() => setShowLLMSettings(false)} onSave={() => showToast(t('app.settings_saved'))} />}
 
       {/* Import Dialog (new: 3-tab import) */}
       {showImportModal && <ImportDialog onClose={() => setShowImportModal(false)} />}
@@ -504,22 +504,22 @@ const App: React.FC = () => {
       {showImportDialog && importPreviewData && (
         <div className="modal-overlay" onClick={() => { setShowImportDialog(false); setImportFile(null); setImportPreviewData(null); }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ width: 480 }}>
-            <h2 style={{ marginBottom: 16 }}>📥 导入项目预览</h2>
+            <h2 style={{ marginBottom: 16 }}>📥 {t('app.import_preview_title')}</h2>
             <div style={{ background: 'var(--bg-primary)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{importPreviewData.title}</div>
               <div style={{ fontSize: 13, color: '#a0a0b0', lineHeight: 1.8 }}>
-                <div>📦 格式：{importPreviewData.format}</div>
-                <div>🧱 块数量：{importPreviewData.total_blocks}</div>
-                <div>📖 章节：{importPreviewData.total_chapters}</div>
-                <div>📝 字数：{importPreviewData.total_words?.toLocaleString()}</div>
-                {importPreviewData.exported_at && <div>🕐 导出时间：{importPreviewData.exported_at?.substring(0, 16)}</div>}
-                {importPreviewData.story_cards?.length > 0 && <div>🎴 故事卡：{importPreviewData.story_cards.join(', ')}</div>}
+                <div>📦 {t('app.format_label')}：{importPreviewData.format}</div>
+                <div>🧱 {t('app.block_count_label')}：{importPreviewData.total_blocks}</div>
+                <div>📖 {t('app.chapter_count_label')}：{importPreviewData.total_chapters}</div>
+                <div>📝 {t('app.word_count_label')}：{importPreviewData.total_words?.toLocaleString()}</div>
+                {importPreviewData.exported_at && <div>🕐 {t('app.export_time_label')}：{importPreviewData.exported_at?.substring(0, 16)}</div>}
+                {importPreviewData.story_cards?.length > 0 && <div>🎴 {t('app.story_cards_label')}：{importPreviewData.story_cards.join(', ')}</div>}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={() => { setShowImportDialog(false); setImportFile(null); setImportPreviewData(null); }}>取消</button>
+              <button className="btn" onClick={() => { setShowImportDialog(false); setImportFile(null); setImportPreviewData(null); }}>{t('common.cancel')}</button>
               <button className="btn btn-primary" onClick={handleImportConfirm} disabled={importing}>
-                {importing ? '导入中...' : '✅ 确认导入'}
+                {importing ? t('app.importing') : '✅ ' + t('app.confirm_import_btn')}
               </button>
             </div>
           </div>
@@ -537,17 +537,18 @@ export default App;
 
 // ─── 添加块分组菜单（全部33种块类型，按类别排列） ─────────
 const BLOCK_GROUPS: { label: string; types: string[] }[] = [
-  { label: '角色类', types: ['CHARACTER', 'PERSONALITY', 'GROWTH', 'BACKSTORY', 'CURRENT_STATE', 'INFORMATION_BOUNDARY', 'OMNISCIENT_LAYER'] },
-  { label: '世界类', types: ['WORLDVIEW', 'FACTION', 'RULE_CONSTRAINT', 'WORLD_DEVELOPMENT', 'TIMESTAMP'] },
-  { label: '叙事结构类', types: ['TIMELINE', 'SCENE', 'EVENT', 'GOAL', 'CONFLICT', 'TURNING_POINT', 'HOOK', 'FORESHADOW', 'SURPRISE'] },
-  { label: '关系类', types: ['RELATIONSHIP', 'FACTION_RELATION'] },
-  { label: '表达类', types: ['ATMOSPHERE', 'EMOTION_TARGET', 'RHYTHM', 'THEME_STATEMENT', 'LENS'] },
-  { label: '剧本类', types: ['SCENE_HEADING', 'ACTION_LINE', 'DIALOGUE', 'VISUAL_MOTIF'] },
-  { label: '大纲类', types: ['STORY_OUTLINE', 'STORY_SYNOPSIS', 'CHAPTER_OUTLINE', 'CHAPTER_DETAIL'] },
-  { label: '特殊类', types: ['READER_EMOTION_CURVE', 'STORY_CARD'] },
+  { label: 'category.character', types: ['CHARACTER', 'PERSONALITY', 'GROWTH', 'BACKSTORY', 'CURRENT_STATE', 'INFORMATION_BOUNDARY', 'OMNISCIENT_LAYER'] },
+  { label: 'category.world', types: ['WORLDVIEW', 'FACTION', 'RULE_CONSTRAINT', 'WORLD_DEVELOPMENT', 'TIMESTAMP'] },
+  { label: 'category.structure', types: ['TIMELINE', 'SCENE', 'EVENT', 'GOAL', 'CONFLICT', 'TURNING_POINT', 'HOOK', 'FORESHADOW', 'SURPRISE'] },
+  { label: 'category.relationship', types: ['RELATIONSHIP', 'FACTION_RELATION'] },
+  { label: 'category.expression', types: ['ATMOSPHERE', 'EMOTION_TARGET', 'RHYTHM', 'THEME_STATEMENT', 'LENS'] },
+  { label: 'category.screenplay', types: ['SCENE_HEADING', 'ACTION_LINE', 'DIALOGUE', 'VISUAL_MOTIF'] },
+  { label: 'category.outline', types: ['STORY_OUTLINE', 'STORY_SYNOPSIS', 'CHAPTER_OUTLINE', 'CHAPTER_DETAIL'] },
+  { label: 'category.special', types: ['READER_EMOTION_CURVE', 'STORY_CARD'] },
 ];
 
 const AddBlockMenu: React.FC<{ onAdd: (type: string) => void }> = ({ onAdd }) => {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -568,7 +569,7 @@ const AddBlockMenu: React.FC<{ onAdd: (type: string) => void }> = ({ onAdd }) =>
         className="btn btn-primary"
         style={{ width: 36, height: 36, borderRadius: '50%', fontSize: 20, padding: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
         onClick={() => setOpen(!open)}
-        title="添加块"
+        title={t('app.add_block')}
       >
         +
       </button>
@@ -591,7 +592,7 @@ const AddBlockMenu: React.FC<{ onAdd: (type: string) => void }> = ({ onAdd }) =>
                 marginBottom: 4, paddingLeft: 6,
                 borderLeft: '3px solid #555',
               }}>
-                {group.label}
+                {t(group.label)}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {group.types.map((type) => (
@@ -612,7 +613,7 @@ const AddBlockMenu: React.FC<{ onAdd: (type: string) => void }> = ({ onAdd }) =>
                     <span style={{ fontSize: 14, opacity: 0.7 }}>
                       {type === 'CHARACTER' ? '👤' : type === 'SCENE' ? '🎬' : type === 'GOAL' ? '🎯' : type === 'CONFLICT' ? '⚔️' : type === 'HOOK' ? '❓' : type === 'WORLDVIEW' ? '🌍' : type === 'FACTION' ? '🏛️' : type === 'TIMELINE' ? '⏱️' : type === 'EVENT' ? '📌' : type === 'TURNING_POINT' ? '💥' : type === 'FORESHADOW' ? '🔮' : type === 'SURPRISE' ? '😲' : type === 'RELATIONSHIP' ? '💞' : type === 'GROWTH' ? '🌱' : type === 'DIALOGUE' ? '💬' : '▫'}
                     </span>
-                    <span>{BLOCK_LABELS[type] || type}</span>
+                    <span>{t(`block.${type}`) || type}</span>
                   </button>
                 ))}
               </div>

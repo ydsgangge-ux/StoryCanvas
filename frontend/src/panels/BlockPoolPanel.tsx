@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useCanvasStore } from '../store/canvasStore';
 import { useUIStore } from '../store/uiStore';
-import { BLOCK_LABELS, BLOCK_COLORS, BLOCK_CATEGORIES, CATEGORY_LABELS } from '../types/blocks';
+import { BLOCK_COLORS, BLOCK_CATEGORIES } from '../types/blocks';
 import { useT } from '../i18n/useT';
+import { t } from '../i18n';
 
 interface PoolBlock {
   id: string;
@@ -41,27 +42,27 @@ const BlockPoolPanel: React.FC = () => {
   const moveToCanvas = async (block: PoolBlock) => {
     try {
       await fetch(`/api/projects/${currentProject!.id}/blocks/${block.id}/move-to-canvas`, { method: 'POST' });
-      showToast(`${BLOCK_LABELS[block.type] || block.type} 已放到画布`);
+      showToast(`${t(`block.${block.type}`)} ${t('pool.placed_on_canvas')}`);
       await fetchPool();
       // 刷新画布
       const { blocks, connections } = useProjectStore.getState();
       syncFromBlocks(blocks, connections);
     } catch {
-      showToast('操作失败', 'error');
+      showToast(t('pool.operation_failed'), 'error');
     }
   };
 
   const deleteBlock = async (blockId: string) => {
-    if (!confirm('确定删除此块？')) return;
+    if (!confirm(t('pool.confirm_delete'))) return;
     try {
       await fetch(`/api/projects/${currentProject!.id}/blocks/${blockId}`, { method: 'DELETE' });
-      showToast('已删除');
+      showToast(t('pool.deleted'));
       fetchPool();
     } catch {}
   };
 
   const filtered = poolBlocks.filter(b => {
-    const label = BLOCK_LABELS[b.type] || '';
+    const label = t(`block.${b.type}`);
     const name = b.content?.name || b.content?.title || '';
     return label.includes(search) || name.includes(search) || b.type.includes(search.toUpperCase());
   });
@@ -77,29 +78,29 @@ const BlockPoolPanel: React.FC = () => {
   return (
     <div className="panel" style={{ width: 320, minWidth: 260 }}>
       <div className="panel-header">
-        <span>📦 块池</span>
+        <span>📦 {t('pool.title')}</span>
         <button className="btn btn-sm btn-ghost" onClick={fetchPool} disabled={loading}>⟳</button>
       </div>
       <div className="panel-body" style={{ padding: 0 }}>
         {/* 搜索 */}
         <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-color)' }}>
-          <input className="form-input" type="text" placeholder="🔍 搜索块类型或名称..."
+          <input className="form-input" type="text" placeholder={`🔍 ${t('pool.search_placeholder')}...`}
             value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ fontSize: 12, padding: '4px 8px' }} />
         </div>
 
         {/* 统计 */}
         <div style={{ padding: '4px 10px', fontSize: 11, color: '#888', borderBottom: '1px solid var(--border-color)' }}>
-          共 {poolBlocks.length} 个块在池中
+          {t('pool.total_blocks', { count: poolBlocks.length })}
         </div>
 
         {/* 列表 */}
         <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', padding: 8 }}>
           {loading ? (
-            <div style={{ textAlign: 'center', color: '#6c6c80', padding: 20 }}>加载中...</div>
+            <div style={{ textAlign: 'center', color: '#6c6c80', padding: 20 }}>{t('pool.loading')}</div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#6c6c80', padding: 20, fontSize: 13 }}>
-              {search ? '无匹配结果' : '块池为空\n创建新块时默认放入画布'}
+              {search ? t('pool.no_match') : t('pool.empty_hint')}
             </div>
           ) : (
             CATEGORY_ORDER.map(cat => {
@@ -108,7 +109,7 @@ const BlockPoolPanel: React.FC = () => {
               return (
                 <div key={cat} style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#666', marginBottom: 4, paddingLeft: 2 }}>
-                    {CATEGORY_LABELS[cat] || cat} ({blocks.length})
+                    {t(`category.${cat}`)} ({blocks.length})
                   </div>
                   {blocks.map(b => {
                     const name = b.content?.name || b.content?.title || b.content?.card_name || '';
@@ -122,17 +123,17 @@ const BlockPoolPanel: React.FC = () => {
                         cursor: 'pointer', fontSize: 12,
                       }}
                         onClick={() => moveToCanvas(b)}
-                        title={`点击放到画布`}
+                        title={t('pool.click_to_place')}
                       >
                         <span style={{ fontSize: 10, color, fontWeight: 700, width: 14 }}>
                           {b.type.substring(0, 2)}
                         </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: name ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {name || BLOCK_LABELS[b.type] || b.type}
+                            {name || t(`block.${b.type}`)}
                           </div>
                           <div style={{ fontSize: 10, color: '#888' }}>
-                            {BLOCK_LABELS[b.type] || b.type} · {Math.round((b.completeness || 0) * 100)}%
+                            {t(`block.${b.type}`)} · {Math.round((b.completeness || 0) * 100)}%
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 2 }}>

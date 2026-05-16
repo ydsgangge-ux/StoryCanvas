@@ -607,8 +607,9 @@ async def suggest_blocks(project_id: str, req: dict):
 
 @router.post("/api/projects/{project_id}/audit/{chapter_num}")
 async def audit_chapter(project_id: str, chapter_num: int):
-    """单章审计"""
+    """单章审计，保存审计结果到数据库"""
     import asyncio
+    import json
     from backend.pipeline.auditor import run as auditor_run
     from backend.narrative.aggregator import ContextAggregator
     conn = get_connection()
@@ -616,25 +617,51 @@ async def audit_chapter(project_id: str, chapter_num: int):
         "SELECT content FROM chapters WHERE project_id = ? AND chapter_num = ?",
         (project_id, chapter_num)
     ).fetchone()
-    conn.close()
     if not chapter or not chapter["content"]:
+        conn.close()
         raise HTTPException(404, "章节不存在或无内容")
 
     aggregator = ContextAggregator()
     ctx = aggregator.aggregate(project_id, chapter_num)
     result = await auditor_run(chapter["content"], ctx)
+
+    conn.execute(
+        "UPDATE chapters SET audit_result = ?, updated_at = datetime('now') WHERE project_id = ? AND chapter_num = ?",
+        (json.dumps(result, ensure_ascii=False), project_id, chapter_num)
+    )
+    conn.commit()
+    conn.close()
     return {"audit": result}
+
+
+@router.get("/api/projects/{project_id}/audit/{chapter_num}")
+def get_audit_result(project_id: str, chapter_num: int):
+    """获取已保存的审计结果"""
+    import json
+    conn = get_connection()
+    chapter = conn.execute(
+        "SELECT audit_result FROM chapters WHERE project_id = ? AND chapter_num = ?",
+        (project_id, chapter_num)
+    ).fetchone()
+    conn.close()
+    if not chapter or not chapter["audit_result"]:
+        return {"audit": None}
+    try:
+        return {"audit": json.loads(chapter["audit_result"])}
+    except json.JSONDecodeError:
+        return {"audit": None}
 
 
 @router.post("/api/projects/{project_id}/revise/{chapter_num}")
 async def revise_chapter(project_id: str, chapter_num: int):
-    """单章修订"""
+    """单章修订 - 使用已保存的审计结果一键修复全部问题"""
+    import json
     from backend.pipeline.auditor import run as auditor_run
     from backend.pipeline.revisor import run as revisor_run
     from backend.narrative.aggregator import ContextAggregator
     conn = get_connection()
     chapter = conn.execute(
-        "SELECT content FROM chapters WHERE project_id = ? AND chapter_num = ?",
+        "SELECT content, audit_result FROM chapters WHERE project_id = ? AND chapter_num = ?",
         (project_id, chapter_num)
     ).fetchone()
     if not chapter or not chapter["content"]:
@@ -643,19 +670,29 @@ async def revise_chapter(project_id: str, chapter_num: int):
 
     aggregator = ContextAggregator()
     ctx = aggregator.aggregate(project_id, chapter_num)
-    audit = await auditor_run(chapter["content"], ctx)
-    if not audit.get("has_critical_issues", False):
+
+    audit = None
+    if chapter["audit_result"]:
+        try:
+            audit = json.loads(chapter["audit_result"])
+        except json.JSONDecodeError:
+            pass
+
+    if not audit or not audit.get("issues"):
+        audit = await auditor_run(chapter["content"], ctx)
+
+    if not audit.get("has_critical_issues", False) and not audit.get("issues"):
         conn.close()
         return {"message": "无需修订", "audit": audit}
 
     revised = await revisor_run(chapter["content"], audit.get("result", ""), ctx)
     conn.execute(
-        "UPDATE chapters SET content = ?, updated_at = datetime('now') WHERE project_id = ? AND chapter_num = ?",
+        "UPDATE chapters SET content = ?, audit_result = NULL, updated_at = datetime('now') WHERE project_id = ? AND chapter_num = ?",
         (revised, project_id, chapter_num)
     )
     conn.commit()
     conn.close()
-    return {"message": "修订完成", "revised_content": revised[:500] + "..."}
+    return {"message": "修订完成", "revised_content": revised}
 
 
 # ─── 细纲特殊关联线 ──────────────────────────────────────

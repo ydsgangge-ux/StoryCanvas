@@ -54,6 +54,7 @@ export interface BlockData {
   notes: string;
   content: Record<string, any>;
   is_draft: boolean;
+  on_canvas: boolean;
   created_at: string;
   updated_at: string;
 }

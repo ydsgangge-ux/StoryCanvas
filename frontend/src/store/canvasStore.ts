@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { Node, Edge, Viewport, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
-import { BlockData, ConnectionData, BLOCK_COLORS, BLOCK_LABELS, CONN_LABELS } from '../types/blocks';
+import { BlockData, ConnectionData, BLOCK_COLORS } from '../types/blocks';
 import { ViewMode } from '../types/canvas';
 import * as api from '../api/blocks';
+import { t } from '../i18n';
 
 interface CanvasStore {
   nodes: Node[];
@@ -223,7 +224,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       source: c.from_block,
       target: c.to_block,
       type: connStyleMap[c.conn_type] || 'smoothstep',
-      label: CONN_LABELS[c.conn_type] || c.conn_type,
+      label: t(`conn.${c.conn_type}`),
       style: { stroke: getConnColor(c.conn_type) },
       animated: c.conn_type === 'foreshadows',
       data: { conn_type: c.conn_type },
@@ -244,23 +245,23 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
 function getBlockTitle(block: BlockData): string {
   const content = block.content || {};
-  if (block.type === 'CHARACTER') return content.name || '新角色';
-  if (block.type === 'SCENE') return content.title || '新场景';
-  if (block.type === 'TIMELINE') return content.timeline_name || '新时间线';
-  if (block.type === 'EVENT') return content.title || '新事件';
-  if (block.type === 'HOOK') return content.title || '新悬念';
-  if (block.type === 'WORLDVIEW') return content.world_name || '新世界观';
-  if (block.type === 'FACTION') return content.name || '新势力';
-  if (block.type === 'GOAL') return content.surface_goal || '新目标';
-  if (block.type === 'CONFLICT') return content.title || '新冲突';
-  if (block.type === 'TURNING_POINT') return content.title || '新转折';
-  if (block.type === 'RELATIONSHIP') return `${content.relationship_type || '关系'}`;
-  if (block.type === 'STORY_CARD') return content.card_name || content.card_id || '故事卡';
-  if (block.type === 'STORY_OUTLINE') return content.title || '故事大纲';
-  if (block.type === 'CHAPTER_OUTLINE') return `第${content.chapter_number || '?'}章 ${content.title || '大纲'}`;
-  if (block.type === 'CHAPTER_DETAIL') return `第${content.chapter_number || '?'}章细纲: ${content.title || ''}`;
-  if (block.type === 'STORY_SYNOPSIS') return content.title || '故事简介';
-  return BLOCK_LABELS[block.type] || block.type;
+  if (block.type === 'CHARACTER') return content.name || t('char.new_character');
+  if (block.type === 'SCENE') return content.title || t('block.new_scene');
+  if (block.type === 'TIMELINE') return content.timeline_name || t('block.new_timeline');
+  if (block.type === 'EVENT') return content.title || t('block.new_event');
+  if (block.type === 'HOOK') return content.title || t('block.new_hook');
+  if (block.type === 'WORLDVIEW') return content.world_name || t('block.new_worldview');
+  if (block.type === 'FACTION') return content.name || t('block.new_faction');
+  if (block.type === 'GOAL') return content.surface_goal || t('block.new_goal');
+  if (block.type === 'CONFLICT') return content.title || t('block.new_conflict');
+  if (block.type === 'TURNING_POINT') return content.title || t('block.new_turning');
+  if (block.type === 'RELATIONSHIP') return `${content.relationship_type || t('block.relationship')}`;
+  if (block.type === 'STORY_CARD') return content.card_name || content.card_id || t('block.story_card');
+  if (block.type === 'STORY_OUTLINE') return content.title || t('block.story_outline');
+  if (block.type === 'CHAPTER_OUTLINE') return `${t('field.chapter')}${content.chapter_number || '?'} ${content.title || t('block.outline')}`;
+  if (block.type === 'CHAPTER_DETAIL') return `${t('field.chapter')}${content.chapter_number || '?'}${t('block.detail')}: ${content.title || ''}`;
+  if (block.type === 'STORY_SYNOPSIS') return content.title || t('block.story_synopsis');
+  return t(`block.${block.type}`);
 }
 
 function getConnColor(type: string): string {

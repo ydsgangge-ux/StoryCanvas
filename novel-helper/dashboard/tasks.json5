@@ -1,0 +1,19 @@
+[
+  {
+    id: 't1',
+    title: '整理真实数据接入方案',
+    description: '将工作台数据源迁移到 novel-helper 项目结构',
+    status: 'doing',
+    priority: 'high',
+    tags: [
+      '工作台',
+      '数据',
+    ],
+    group: '开发',
+    start: 1776700800000,
+    end: 1776959999000,
+    progress: 60,
+    color: '#d94a9b',
+    subtasks: [],
+  },
+]

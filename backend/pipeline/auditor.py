@@ -73,6 +73,16 @@ async def run(chapter_content: str, ctx: dict) -> dict:
       "suggestion": "具体修复建议"
     }}
   ],
+  "foreshadows_extracted": [
+    {{
+      "title": "伏笔/悬念标题（简短概括）",
+      "type": "foreshadow 或 hook",
+      "description": "伏笔的具体内容描述",
+      "location": "原文关键句引用",
+      "urgency": "high/medium/low",
+      "suggested_payoff_chapter": "建议回收章节号（数字或空字符串）"
+    }}
+  ],
   "overall_note": "整体评价（1-2句话）"
 }}
 
@@ -98,6 +108,7 @@ async def run(chapter_content: str, ctx: dict) -> dict:
         parsed = json.loads(result)
         issues = parsed.get("issues", [])
         has_critical = any(i.get("severity") == "critical" for i in issues)
+        foreshadows_extracted = parsed.get("foreshadows_extracted", [])
         return {
             "result": result,
             "parsed": parsed,
@@ -106,9 +117,9 @@ async def run(chapter_content: str, ctx: dict) -> dict:
             "issues": issues,
             "total_issues": len(issues),
             "critical_count": sum(1 for i in issues if i.get("severity") == "critical"),
+            "foreshadows_extracted": foreshadows_extracted,
         }
     except json.JSONDecodeError:
-        # 回退：文本检测
         has_critical = "critical" in result.lower() and "不通过" in result
         return {
             "result": result,

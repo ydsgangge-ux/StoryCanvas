@@ -1,0 +1,238 @@
+{
+  "windows": [
+    {
+      "id": "win-heatmap",
+      "type": "heatmap",
+      "title": "码字热力图",
+      "x": 20,
+      "y": 20,
+      "w": 360,
+      "h": 180,
+      "restoreBounds": {
+        "x": 20,
+        "y": 20,
+        "w": 360,
+        "h": 180
+      },
+      "maximized": false,
+      "z": 1
+    },
+    {
+      "id": "win-clock",
+      "type": "clock",
+      "title": "当前时间",
+      "x": 400,
+      "y": 20,
+      "w": 260,
+      "h": 180,
+      "restoreBounds": {
+        "x": 400,
+        "y": 20,
+        "w": 260,
+        "h": 180
+      },
+      "maximized": false,
+      "z": 2
+    },
+    {
+      "id": "win-profile",
+      "type": "profile",
+      "title": "我的小说",
+      "x": 680,
+      "y": 20,
+      "w": 320,
+      "h": 300,
+      "restoreBounds": {
+        "x": 680,
+        "y": 20,
+        "w": 320,
+        "h": 300
+      },
+      "maximized": false,
+      "z": 3
+    },
+    {
+      "id": "win-gantt",
+      "type": "gantt",
+      "title": "任务甘特图",
+      "x": 20,
+      "y": 220,
+      "w": 760,
+      "h": 330,
+      "restoreBounds": {
+        "x": 20,
+        "y": 220,
+        "w": 760,
+        "h": 330
+      },
+      "maximized": false,
+      "z": 4
+    },
+    {
+      "id": "win-plan",
+      "type": "plan",
+      "title": "今日计划",
+      "x": 462.60003662109375,
+      "y": 220,
+      "w": 540,
+      "h": 330,
+      "restoreBounds": {
+        "x": 800,
+        "y": 220,
+        "w": 540,
+        "h": 330
+      },
+      "maximized": false,
+      "z": 5
+    },
+    {
+      "id": "win-tasks",
+      "type": "tasks",
+      "title": "任务清单",
+      "x": 20,
+      "y": 427.20001220703125,
+      "w": 760,
+      "h": 260,
+      "restoreBounds": {
+        "x": 20,
+        "y": 570,
+        "w": 760,
+        "h": 260
+      },
+      "maximized": false,
+      "z": 6
+    },
+    {
+      "id": "win-year",
+      "type": "yearPlan",
+      "title": "年计划",
+      "x": 722.6000366210938,
+      "y": 340,
+      "w": 280,
+      "h": 260,
+      "restoreBounds": {
+        "x": 1060,
+        "y": 340,
+        "w": 280,
+        "h": 260
+      },
+      "maximized": false,
+      "z": 7
+    },
+    {
+      "id": "win-logs",
+      "type": "logs",
+      "title": "创作记录",
+      "x": 462.60003662109375,
+      "y": 427.20001220703125,
+      "w": 540,
+      "h": 260,
+      "restoreBounds": {
+        "x": 800,
+        "y": 570,
+        "w": 540,
+        "h": 260
+      },
+      "maximized": false,
+      "z": 8
+    },
+    {
+      "id": "win-timer",
+      "type": "timer",
+      "title": "计时器",
+      "x": 682.6000366210938,
+      "y": 327.20001220703125,
+      "w": 320,
+      "h": 360,
+      "restoreBounds": {
+        "x": 1360,
+        "y": 570,
+        "w": 320,
+        "h": 360
+      },
+      "maximized": false,
+      "z": 9
+    }
+  ],
+  "energyMetrics": [
+    {
+      "key": "physical",
+      "label": "Physical",
+      "value": 25,
+      "color": "#5d7bd5"
+    },
+    {
+      "key": "mental",
+      "label": "Mental",
+      "value": 25,
+      "color": "#84c66f"
+    },
+    {
+      "key": "mood",
+      "label": "Mood",
+      "value": 25,
+      "color": "#f7c75c"
+    },
+    {
+      "key": "motivation",
+      "label": "Motivation",
+      "value": 25,
+      "color": "#ef6262"
+    },
+    {
+      "key": "longTerm",
+      "label": "LongTerm",
+      "value": 7,
+      "color": "#65c0bd"
+    }
+  ],
+  "logs": [
+    {
+      "id": "l1",
+      "createdAt": "2026/04/14 23:42",
+      "completedAt": "2026/04/14 23:58",
+      "title": "Java 语法学习",
+      "tag": "学习"
+    },
+    {
+      "id": "l2",
+      "createdAt": "2026/04/18 00:42",
+      "completedAt": "2026/04/21 00:42",
+      "title": "构建个人修炼系统",
+      "tag": "项目"
+    }
+  ],
+  "profile": {
+    "name": "未命名项目",
+    "role": "未设置作者",
+    "quote": "未填写项目简介",
+    "coverUrl": "",
+    "coverPath": "",
+    "tags": [],
+    "noteCount": 3,
+    "taskCount": 1,
+    "goalCount": 0,
+    "roleCount": 0,
+    "wordCount": 7755
+  },
+  "clockSettings": {
+    "preset": "standard",
+    "title": "当前时间",
+    "customLabel": "",
+    "showTitle": true,
+    "timeZone": "",
+    "hour12": false,
+    "showSeconds": true,
+    "secondsStyle": "suffix",
+    "showDate": true,
+    "showWeekday": true,
+    "showPeriod": true,
+    "showProgress": true,
+    "showTimezone": true,
+    "dateStyle": "long",
+    "align": "center",
+    "extraClocks": []
+  },
+  "selectedYearPlanYear": 2026,
+  "selectedPlanFile": "plan.md"
+}

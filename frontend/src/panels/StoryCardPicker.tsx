@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/projectStore';
-import { useUIStore } from '../store/uiStore'
-import { useT } from '../i18n/useT';;
+import { useUIStore } from '../store/uiStore';
+import { useT } from '../i18n/useT';
+import { t as ti } from '../i18n';
 import { StoryCard } from '../types/canvas';
 
 interface StoryCardPickerProps {
@@ -9,9 +10,9 @@ interface StoryCardPickerProps {
   onClose: () => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  A: '目标驱动', B: '关系驱动', C: '揭秘驱动',
-  D: '生存驱动', E: '成长驱动', F: '世界驱动', G: '特殊结构',
+const CATEGORY_KEYS: Record<string, string> = {
+  A: 'storycard.cat_goal', B: 'storycard.cat_relation', C: 'storycard.cat_mystery',
+  D: 'storycard.cat_survival', E: 'storycard.cat_growth', F: 'storycard.cat_world', G: 'storycard.cat_special',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -60,8 +61,8 @@ const StoryCardPicker: React.FC<StoryCardPickerProps> = ({ projectId, onClose })
     <div className="story-card-picker-overlay">
       <div className="story-card-picker">
         <div className="story-card-picker-header">
-          <h2>选择故事卡</h2>
-          <p>故事卡会为你的项目自动创建初始结构和推荐块。选择一个主卡，可以叠加副卡。</p>
+          <h2>{ti('storycard.title')}</h2>
+          <p>{ti('storycard.desc')}</p>
         </div>
         <div className="story-card-grid">
           {Object.entries(groupedCards).map(([category, cards]) => (
@@ -70,7 +71,7 @@ const StoryCardPicker: React.FC<StoryCardPickerProps> = ({ projectId, onClose })
                 fontSize: 13, fontWeight: 600, color: CATEGORY_COLORS[category] || '#fff',
                 marginBottom: 8, paddingLeft: 4,
               }}>
-                {CATEGORY_LABELS[category] || category}
+                {ti(CATEGORY_KEYS[category] || category)}
               </div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 {cards.map((card) => {
@@ -87,20 +88,20 @@ const StoryCardPicker: React.FC<StoryCardPickerProps> = ({ projectId, onClose })
                     >
                       <div className="card-name">{card.name}</div>
                       <div className="card-category">
-                        {CATEGORY_LABELS[card.category]} · {card.id}
+                        {ti(CATEGORY_KEYS[card.category] || card.category)} · {card.id}
                       </div>
                       <div className="card-desc">{card.description}</div>
                       <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <span className={`card-difficulty difficulty-${card.difficulty}`}>
-                          {card.difficulty === 'beginner' ? '初级' :
-                           card.difficulty === 'intermediate' ? '中级' :
-                           card.difficulty === 'advanced' ? '高级' : '专家'}
+                          {card.difficulty === 'beginner' ? ti('storycard.beginner') :
+                           card.difficulty === 'intermediate' ? ti('storycard.intermediate') :
+                           card.difficulty === 'advanced' ? ti('storycard.advanced') : ti('storycard.expert')}
                         </span>
-                        {isPrimary && <span style={{ fontSize: 10, color: '#FFD700' }}>★ 主卡</span>}
+                        {isPrimary && <span style={{ fontSize: 10, color: '#FFD700' }}>★ {ti('storycard.primary')}</span>}
                       </div>
                       {card.reference_works && card.reference_works.length > 0 && (
                         <div style={{ fontSize: 10, color: '#6c6c80', marginTop: 4 }}>
-                          参考: {card.reference_works.join(', ')}
+                          {ti('storycard.reference')}: {card.reference_works.join(', ')}
                         </div>
                       )}
                       {selectedPrimary && selectedPrimary !== card.id && (
@@ -109,7 +110,7 @@ const StoryCardPicker: React.FC<StoryCardPickerProps> = ({ projectId, onClose })
                           style={{ marginTop: 6, fontSize: 11 }}
                           onClick={(e) => { e.stopPropagation(); handleSecondaryToggle(card.id); }}
                         >
-                          {isSecondary ? '取消叠加' : '+ 叠加'}
+                          {isSecondary ? ti('storycard.cancel_stack') : `+ ${ti('storycard.stack')}`}
                         </button>
                       )}
                     </div>
@@ -121,14 +122,14 @@ const StoryCardPicker: React.FC<StoryCardPickerProps> = ({ projectId, onClose })
         </div>
         <div className="story-card-picker-footer">
           <button className="btn" onClick={onClose}>
-            空白画布
+            {ti('storycard.blank_canvas')}
           </button>
           <button
             className="btn btn-primary"
             onClick={handleApply}
             disabled={!selectedPrimary || isLoading}
           >
-            {isLoading ? '应用...' : `应用故事卡 (${selectedSecondary.length + (selectedPrimary ? 1 : 0)}张)`}
+            {isLoading ? ti('storycard.applying') : ti('storycard.apply', { count: selectedSecondary.length + (selectedPrimary ? 1 : 0) })}
           </button>
         </div>
       </div>

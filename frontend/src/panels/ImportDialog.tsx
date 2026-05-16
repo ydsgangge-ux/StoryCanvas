@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
-import { useUIStore } from '../store/uiStore'
-import { useT } from '../i18n/useT';;
-import { BLOCK_LABELS } from '../types/blocks';
+import { useUIStore } from '../store/uiStore';
+import { useT } from '../i18n/useT';
+import { t } from '../i18n';
 
 type ImportTab = 'text' | 'json' | 'dramatica';
 
 const JSON_TEMPLATE = {
-  title: '我的小说',
-  logline: '一句话概括你的故事',
+  title: t('import.template_title'),
+  logline: t('import.template_logline'),
   characters: [
-    { name: '主角名', role: '主角', want: '外在目标', need: '内在渴望', description: '简要描述' },
-    { name: '配角名', role: '配角', want: '目标', need: '渴望', description: '描述' },
-    { name: '反派名', role: '反派', want: '目标', need: '渴望', description: '描述' },
+    { name: t('import.template_protagonist_name'), role: '主角', want: t('import.template_protagonist_want'), need: t('import.template_protagonist_need'), description: t('import.template_protagonist_desc') },
+    { name: t('import.template_supporting_name'), role: '配角', want: t('import.template_goal'), need: t('import.template_desire'), description: t('import.template_desc') },
+    { name: t('import.template_antagonist_name'), role: '反派', want: t('import.template_goal'), need: t('import.template_desire'), description: t('import.template_desc') },
   ],
   world: {
-    name: '世界观名称',
-    rules: ['核心规则1', '核心规则2'],
+    name: t('import.template_world_name'),
+    rules: [t('import.template_rule', { n: 1 }), t('import.template_rule', { n: 2 })],
     factions: [
-      { name: '势力A', ideology: '理念' },
-      { name: '势力B', ideology: '理念' },
+      { name: t('import.template_faction', { n: 'A' }), ideology: t('import.template_ideology') },
+      { name: t('import.template_faction', { n: 'B' }), ideology: t('import.template_ideology') },
     ],
   },
   events: [
-    { title: '关键事件1', description: '发生了什么', chapter: 1 },
-    { title: '关键事件2', description: '发生了什么', chapter: 5 },
+    { title: t('import.template_event', { n: 1 }), description: t('import.template_event_desc'), chapter: 1 },
+    { title: t('import.template_event', { n: 2 }), description: t('import.template_event_desc'), chapter: 5 },
   ],
 };
 
@@ -56,11 +56,11 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: rawText }),
       });
-      if (!res.ok) { showToast('提取失败', 'error'); return; }
+      if (!res.ok) { showToast(t('import.extract_failed'), 'error'); return; }
       const data = await res.json();
       setExtractionResult(data.extraction || data);
-      showToast(`提取完成: ${data.characters_extracted}个角色`);
-    } catch { showToast('提取请求失败', 'error'); }
+      showToast(t('import.extract_complete', { count: data.characters_extracted }));
+    } catch { showToast(t('import.import_request_failed'), 'error'); }
     setExtracting(false);
   };
 
@@ -72,12 +72,12 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(extractionResult),
       });
-      if (!res.ok) { showToast('导入失败', 'error'); return; }
+      if (!res.ok) { showToast(t('import.import_failed'), 'error'); return; }
       const data = await res.json();
-      showToast(`导入完成: 画布${data.on_canvas}个·池${data.in_pool}个`);
+      showToast(t('import.import_complete', { canvas: data.on_canvas, pool: data.in_pool }));
       await loadProject(currentProject.id);
       onClose();
-    } catch { showToast('导入请求失败', 'error'); }
+    } catch { showToast(t('import.import_request_failed'), 'error'); }
   };
 
   const handleImportJson = async () => {
@@ -90,12 +90,12 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(parsed),
       });
-      if (!res.ok) { showToast('导入失败', 'error'); return; }
+      if (!res.ok) { showToast(t('import.import_failed'), 'error'); return; }
       const data = await res.json();
-      showToast(`导入完成: 画布${data.on_canvas}个·池${data.in_pool}个`);
+      showToast(t('import.import_complete', { canvas: data.on_canvas, pool: data.in_pool }));
       await loadProject(currentProject.id);
       onClose();
-    } catch (e: any) { showToast(e.message || 'JSON格式错误', 'error'); }
+    } catch (e: any) { showToast(e.message || t('import.json_format_error'), 'error'); }
     setImportingJson(false);
   };
 
@@ -106,33 +106,33 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const form = new FormData();
       form.append('file', dfFile);
       const res = await fetch('/api/import/dramatica-flow', { method: 'POST', body: form });
-      if (!res.ok) { showToast('导入失败', 'error'); return; }
+      if (!res.ok) { showToast(t('import.import_failed'), 'error'); return; }
       const data = await res.json();
-      showToast(`导入完成: ${data.title} (画布${data.on_canvas}个·池${data.in_pool}个)`);
+      showToast(t('import.import_complete', { canvas: data.on_canvas, pool: data.in_pool }));
       await loadProjects();
       await loadProject(data.project_id);
       onClose();
-    } catch { showToast('导入请求失败', 'error'); }
+    } catch { showToast(t('import.import_request_failed'), 'error'); }
     setImportingDf(false);
   };
 
-  const tabs: { key: ImportTab; label: string; icon: string }[] = [
-    { key: 'text', label: '从文本提取', icon: '📝' },
-    { key: 'json', label: '结构化JSON', icon: '📋' },
-    { key: 'dramatica', label: 'Dramatica-Flow', icon: '📦' },
+  const tabs: { key: ImportTab; labelKey: string; icon: string }[] = [
+    { key: 'text', labelKey: 'import.text_tab', icon: '📝' },
+    { key: 'json', labelKey: 'import.json_tab', icon: '📋' },
+    { key: 'dramatica', labelKey: 'import.dramatica_tab', icon: '📦' },
   ];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ width: 600, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ marginBottom: 12 }}>📥 导入</h2>
+        <h2 style={{ marginBottom: 12 }}>📥 {t('import.title')}</h2>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid var(--border-color)' }}>
-          {tabs.map(t => (
-            <button key={t.key} className={`btn btn-sm ${tab === t.key ? 'btn-primary' : ''}`}
+          {tabs.map(tabItem => (
+            <button key={tabItem.key} className={`btn btn-sm ${tab === tabItem.key ? 'btn-primary' : ''}`}
               style={{ borderRadius: '6px 6px 0 0', padding: '6px 14px' }}
-              onClick={() => setTab(t.key)}>{t.icon} {t.label}</button>
+              onClick={() => setTab(tabItem.key)}>{tabItem.icon} {t(tabItem.labelKey)}</button>
           ))}
         </div>
 
@@ -142,34 +142,34 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {/* TAB 1: 文本提取 */}
           {tab === 'text' && (
             <div>
-              <label className="form-label">粘贴小说正文（支持多章）</label>
+              <label className="form-label">{t('import.paste_novel')}</label>
               <textarea className="form-textarea" rows={10}
                 value={rawText} onChange={(e) => setRawText(e.target.value)}
-                placeholder="粘贴你的小说正文...&#10;系统会自动按「第N章」分章，然后用AI提取角色/世界观/事件" />
+                placeholder={t('import.text_placeholder')} />
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="btn btn-primary" onClick={handleExtract} disabled={extracting || !rawText.trim()}>
-                  {extracting ? '提取中...' : '🔍 LLM提取结构化数据'}
+                  {extracting ? t('import.extracting') : `🔍 ${t('import.extract')}`}
                 </button>
               </div>
 
               {/* 提取预览 */}
               {extractionResult && (
                 <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-card)', borderRadius: 8 }}>
-                  <h3 style={{ fontSize: 15, marginBottom: 8 }}>{extractionResult.title || '提取结果'}</h3>
+                  <h3 style={{ fontSize: 15, marginBottom: 8 }}>{extractionResult.title || t('import.extraction_result')}</h3>
                   {extractionResult.logline && <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>{extractionResult.logline}</div>}
 
                   <div style={{ fontSize: 12, marginBottom: 8 }}>
-                    <span style={{ color: '#4A90D9' }}>角色 {extractionResult.characters?.length || 0}个</span>
+                    <span style={{ color: '#4A90D9' }}>{t('import.characters_label')} {extractionResult.characters?.length || 0}</span>
                     <span style={{ margin: '0 8px', color: '#666' }}>·</span>
-                    <span style={{ color: '#50C878' }}>世界 {extractionResult.world?.name ? '✓' : '✗'}</span>
+                    <span style={{ color: '#50C878' }}>{t('import.world_label')} {extractionResult.world?.name ? '✓' : '✗'}</span>
                     <span style={{ margin: '0 8px', color: '#666' }}>·</span>
-                    <span style={{ color: '#F39C12' }}>事件 {extractionResult.events?.length || 0}个</span>
+                    <span style={{ color: '#F39C12' }}>{t('import.events_label')} {extractionResult.events?.length || 0}</span>
                   </div>
 
                   {/* 角色列表 */}
                   {extractionResult.characters?.length > 0 && (
                     <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 4 }}>角色</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 4 }}>{t('import.characters_label')}</div>
                       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                         {extractionResult.characters.map((c: any, i: number) => (
                           <span key={i} style={{
@@ -184,7 +184,7 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                   <button className="btn btn-primary" onClick={handleImportExtraction}
                     style={{ marginTop: 8, width: '100%' }}>
-                    ✅ 确认导入
+                    ✅ {t('import.confirm_import')}
                   </button>
                 </div>
               )}
@@ -195,22 +195,22 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {tab === 'json' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label className="form-label" style={{ margin: 0 }}>粘贴结构化JSON</label>
+                <label className="form-label" style={{ margin: 0 }}>{t('import.paste_json_label')}</label>
                 <button className="btn btn-sm btn-ghost" style={{ fontSize: 11 }}
                   onClick={() => setJsonInput(JSON.stringify(JSON_TEMPLATE, null, 2))}>
-                  📋 填入模板
+                  📋 {t('import.json_template_btn')}
                 </button>
               </div>
               <textarea className="form-textarea" rows={14}
                 value={jsonInput} onChange={(e) => setJsonInput(e.target.value)}
                 placeholder={'{\n  "characters": [...],\n  "world": {...},\n  "events": [...]\n}'} />
               <div style={{ fontSize: 11, color: '#888', margin: '4px 0 8px' }}>
-                💡 点击「填入模板」查看格式。支持任意 JSON，主角自动放画布，配角/事件进块池。
-                {currentProject && <span> 导入到当前项目「{currentProject.title}」。</span>}
+                💡 {t('import.json_hint')}
+                {currentProject && <span> {t('import.import_to_current', { title: currentProject.title })}</span>}
               </div>
               <button className="btn btn-primary" onClick={handleImportJson} disabled={importingJson || !jsonInput.trim()}
                 style={{ width: '100%' }}>
-                {importingJson ? '导入中...' : currentProject ? '📥 导入到当前项目' : '📥 导入（新建项目）'}
+                {importingJson ? t('import.importing') : currentProject ? `📥 ${t('import.import_to_current')}` : `📥 ${t('import.import_new_project')}`}
               </button>
             </div>
           )}
@@ -218,7 +218,7 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {/* TAB 3: Dramatica-Flow */}
           {tab === 'dramatica' && (
             <div>
-              <label className="form-label">上传 Dramatica-Flow 项目文件</label>
+              <label className="form-label">{t('import.dramatica_upload')}</label>
               <div style={{
                 border: '2px dashed var(--border-color)', borderRadius: 8, padding: 30,
                 textAlign: 'center', cursor: 'pointer', marginBottom: 8,
@@ -233,8 +233,8 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 ) : (
                   <div>
                     <div style={{ fontSize: 32, marginBottom: 8 }}>📂</div>
-                    <div style={{ color: '#888' }}>点击选择 .zip 文件</div>
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>支持 Dramatica-Flow 项目导出的 zip</div>
+                    <div style={{ color: '#888' }}>{t('import.click_select_zip')}</div>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{t('import.dramatica_hint')}</div>
                   </div>
                 )}
               </div>
@@ -242,13 +242,13 @@ const ImportDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 onChange={(e) => setDfFile(e.target.files?.[0] || null)} />
               <button className="btn btn-primary" onClick={handleImportDramatica} disabled={importingDf || !dfFile}
                 style={{ width: '100%' }}>
-                {importingDf ? '导入中...' : '📥 导入 Dramatica-Flow 项目'}
+                {importingDf ? t('import.importing') : `📥 ${t('import.dramatica_import')}`}
               </button>
             </div>
           )}
         </div>
 
-        <button className="btn" onClick={onClose} style={{ marginTop: 12 }}>关闭</button>
+        <button className="btn" onClick={onClose} style={{ marginTop: 12 }}>{t('common.close')}</button>
       </div>
     </div>
   );

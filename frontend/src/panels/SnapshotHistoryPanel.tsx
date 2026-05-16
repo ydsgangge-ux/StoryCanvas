@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import * as snapshotsApi from '../api/snapshots';
 import { useProjectStore } from '../store/projectStore';
-import { useUIStore } from '../store/uiStore'
-import { useT } from '../i18n/useT';;
+import { useUIStore } from '../store/uiStore';
+import { useT } from '../i18n/useT';
+import { t as ti } from '../i18n';
 
 interface SnapshotHistoryPanelProps {
   onClose: () => void;
@@ -37,7 +38,7 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
     if (!currentProject || !newCheckpointLabel.trim()) return;
     try {
       await snapshotsApi.createCheckpoint(currentProject.id, newCheckpointLabel.trim());
-      showToast(`检查点已保存: ${newCheckpointLabel}`);
+      showToast(ti('snapshot.checkpoint_saved', { label: newCheckpointLabel }));
       setNewCheckpointLabel('');
       setShowCreateForm(false);
       loadSnapshots();
@@ -48,11 +49,11 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
 
   const handleRestore = async (snapId: string, label: string) => {
     if (!currentProject) return;
-    if (!confirm(`确定要回滚到「${label || '此版本'}」？\n当前状态将自动备份。`)) return;
+    if (!confirm(ti('snapshot.confirm_restore', { label: label || ti('snapshot.this_version') }))) return;
     setRestoring(snapId);
     try {
       await snapshotsApi.restoreSnapshot(currentProject.id, snapId);
-      showToast(`已回滚到: ${label || '快照'}`);
+      showToast(ti('snapshot.restored_to', { label: label || ti('snapshot.snapshot') }));
       // Reload project
       const { loadProject } = useProjectStore.getState();
       await loadProject(currentProject.id);
@@ -64,10 +65,10 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
 
   const handleDelete = async (snapId: string) => {
     if (!currentProject) return;
-    if (!confirm('确定要删除此检查点？')) return;
+    if (!confirm(ti('snapshot.confirm_delete'))) return;
     try {
       await snapshotsApi.deleteSnapshot(currentProject.id, snapId);
-      showToast('检查点已删除');
+      showToast(ti('snapshot.checkpoint_deleted'));
       loadSnapshots();
     } catch (e: any) {
       showToast(e.message, 'error');
@@ -80,10 +81,10 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
   return (
     <div className="panel" style={{ width: 340, minWidth: 340 }}>
       <div className="panel-header">
-        <span>⏱ 历史</span>
+        <span>⏱ {ti('snapshot.title')}</span>
         <div style={{ display: 'flex', gap: 4 }}>
           <button className="btn btn-sm" onClick={() => setShowCreateForm(!showCreateForm)}>
-            📸 检查点
+            📸 {ti('snapshot.checkpoint')}
           </button>
           <button className="btn btn-sm btn-ghost" onClick={onClose}>✕</button>
         </div>
@@ -92,29 +93,29 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
         {/* Create checkpoint form */}
         {showCreateForm && (
           <div style={{ marginBottom: 12, padding: 8, background: 'var(--bg-primary)', borderRadius: 6 }}>
-            <label className="form-label">检查点名称</label>
+            <label className="form-label">{ti('snapshot.checkpoint_name')}</label>
             <div style={{ display: 'flex', gap: 4 }}>
               <input
                 className="form-input"
                 value={newCheckpointLabel}
                 onChange={(e) => setNewCheckpointLabel(e.target.value)}
-                placeholder="如：第一幕完成"
+                placeholder={ti('snapshot.checkpoint_placeholder')}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateCheckpoint()}
                 style={{ flex: 1 }}
                 autoFocus
               />
-              <button className="btn btn-sm btn-primary" onClick={handleCreateCheckpoint}>保存</button>
+              <button className="btn btn-sm btn-primary" onClick={handleCreateCheckpoint}>{ti('common.save')}</button>
             </div>
           </div>
         )}
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 20, color: '#6c6c80' }}>
-            <span className="loading-spinner" /> 加载中...
+            <span className="loading-spinner" /> {ti('common.loading')}
           </div>
         ) : snapshots.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 20, color: '#6c6c80', fontSize: 13 }}>
-            暂无快照。<br />点击「📸 检查点」创建第一个里程碑。
+            {ti('snapshot.no_snapshots')}
           </div>
         ) : (
           <>
@@ -122,13 +123,13 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
             {checkpoints.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#FFD700', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  📌 检查点（永久）
+                  📌 {ti('snapshot.checkpoints_permanent')}
                 </div>
                 {checkpoints.map((s) => (
                   <SnapshotItem
                     key={s.id}
                     snapshot={s}
-                    onRestore={() => handleRestore(s.id, s.label || '未命名')}
+                    onRestore={() => handleRestore(s.id, s.label || ti('snapshot.unnamed'))}
                     onDelete={() => handleDelete(s.id)}
                     isRestoring={restoring === s.id}
                   />
@@ -140,13 +141,13 @@ const SnapshotHistoryPanel: React.FC<SnapshotHistoryPanelProps> = ({ onClose }) 
             {autoSnapshots.length > 0 && (
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#4A90D9', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  🕐 自动保存（最近{autoSnapshots.length}个）
+                  🕐 {ti('snapshot.auto_saves', { count: autoSnapshots.length })}
                 </div>
                 {autoSnapshots.map((s) => (
                   <SnapshotItem
                     key={s.id}
                     snapshot={s}
-                    onRestore={() => handleRestore(s.id, s.label || `自动保存 ${formatTime(s.created_at)}`)}
+                    onRestore={() => handleRestore(s.id, s.label || ti('snapshot.auto_save', { time: formatTime(s.created_at) }))}
                     isRestoring={restoring === s.id}
                   />
                 ))}
@@ -173,12 +174,12 @@ const SnapshotItem: React.FC<SnapshotItemProps> = ({ snapshot, onRestore, onDele
     <div className="tracking-item" style={{ position: 'relative', cursor: 'default' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12, fontWeight: 500, color: '#e0e0e0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {snapshot.label || (snapshot.snapshot_type === 'auto' ? '自动保存' : '未命名检查点')}
+          {snapshot.label || (snapshot.snapshot_type === 'auto' ? ti('snapshot.auto_save_short') : ti('snapshot.unnamed_checkpoint'))}
         </div>
         <div style={{ fontSize: 10, color: '#6c6c80' }}>
           {formatTime(snapshot.created_at)}
-          {snapshot.block_count > 0 && ` · ${snapshot.block_count}个块`}
-          {snapshot.word_count > 0 && ` · ${snapshot.word_count}字`}
+          {snapshot.block_count > 0 && ` · ${ti('snapshot.block_count', { count: snapshot.block_count })}`}
+          {snapshot.word_count > 0 && ` · ${ti('snapshot.word_count', { count: snapshot.word_count })}`}
         </div>
       </div>
       <button
@@ -200,12 +201,12 @@ const SnapshotItem: React.FC<SnapshotItemProps> = ({ snapshot, onRestore, onDele
           }}>
             <div className="menu-item" onClick={() => { setShowMenu(false); onRestore(); }}
               style={{ padding: '6px 10px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>
-              {isRestoring ? '回滚中...' : '↩ 回滚到此版本'}
+              {isRestoring ? ti('snapshot.restoring') : `↩ ${ti('snapshot.restore_to_version')}`}
             </div>
             {snapshot.snapshot_type === 'checkpoint' && onDelete && (
               <div className="menu-item" onClick={() => { setShowMenu(false); onDelete(); }}
                 style={{ padding: '6px 10px', cursor: 'pointer', borderRadius: 4, fontSize: 12, color: '#E74C3C' }}>
-                🗑 删除
+                🗑 {ti('common.delete')}
               </div>
             )}
           </div>

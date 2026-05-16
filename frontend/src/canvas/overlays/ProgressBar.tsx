@@ -1,5 +1,5 @@
 import React from 'react';
-import { CATEGORY_LABELS } from '../../types/blocks';
+import { t } from '../../i18n';
 
 interface ProgressBarProps {
   overall: number;
@@ -23,7 +23,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ overall, categories, status, 
       <div className="progress-dimensions">
         {Object.entries(categories).map(([key, value]) => (
           <div className="progress-dim" key={key}>
-            <span>{CATEGORY_LABELS[key] || key}</span>
+            <span>{t(`category.${key}`)}</span>
             <div className="progress-dim-bar">
               <div
                 className="progress-dim-fill"
@@ -35,7 +35,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ overall, categories, status, 
         ))}
       </div>
       <div className="progress-overall">
-        <span>综合可控度</span>
+        <span>{t('progress.overall_controllability')}</span>
         <div className="progress-overall-bar">
           <div
             className="progress-overall-fill"

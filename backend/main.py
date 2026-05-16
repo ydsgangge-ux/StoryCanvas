@@ -107,7 +107,20 @@ def get_foreshadows(project_id: str):
         (project_id,)
     ).fetchall()
     conn.close()
-    return [{"id": h["id"], "type": h["type"], "title": (json.loads(h["content"] or "{}")).get("title", ""), "status": (json.loads(h["content"] or "{}")).get("status", "open")} for h in hooks]
+    result = []
+    for h in hooks:
+        hc = json.loads(h["content"] or "{}")
+        result.append({
+            "id": h["id"],
+            "type": h["type"],
+            "title": hc.get("title", ""),
+            "status": hc.get("status", "open"),
+            "urgency": hc.get("urgency", ""),
+            "plant_chapter": hc.get("plant_chapter", ""),
+            "payoff_chapter": hc.get("payoff_chapter", ""),
+            "description": hc.get("description", hc.get("hint_content", "")),
+        })
+    return result
 
 
 @app.get("/api/projects/{project_id}/character-arcs")
@@ -117,8 +130,21 @@ def get_character_arcs(project_id: str):
     import json
     conn = get_connection()
     chars = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'CHARACTER'", (project_id,)).fetchall()
+    growths = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'GROWTH'", (project_id,)).fetchall()
     conn.close()
-    return [{"id": c["id"], "name": (json.loads(c["content"] or "{}")).get("name", ""), "arc_type": (json.loads(c["content"] or "{}")).get("arc_type", "未设定")} for c in chars]
+    char_map = {}
+    for c in chars:
+        cc = json.loads(c["content"] or "{}")
+        char_map[c["id"]] = {"id": c["id"], "name": cc.get("name", ""), "arc_type": "", "start_state": "", "end_state": "", "keystone_moments": ""}
+    for g in growths:
+        gc = json.loads(g["content"] or "{}")
+        owner_id = gc.get("character_id", "")
+        if owner_id in char_map:
+            char_map[owner_id]["arc_type"] = gc.get("arc_type", "")
+            char_map[owner_id]["start_state"] = gc.get("start_state", "")
+            char_map[owner_id]["end_state"] = gc.get("end_state", "")
+            char_map[owner_id]["keystone_moments"] = gc.get("keystone_moments", "")
+    return list(char_map.values())
 
 
 @app.get("/api/projects/{project_id}/relationship-map")
@@ -128,11 +154,28 @@ def get_relationship_map(project_id: str):
     import json
     conn = get_connection()
     rels = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'RELATIONSHIP'", (project_id,)).fetchall()
+    chars = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'CHARACTER'", (project_id,)).fetchall()
     conn.close()
+    char_names = {}
+    for c in chars:
+        cc = json.loads(c["content"] or "{}")
+        char_names[c["id"]] = cc.get("name", c["id"])
     result = []
     for r in rels:
         c = json.loads(r["content"] or "{}")
-        result.append({"id": r["id"], "party_a": c.get("party_a_id", ""), "party_b": c.get("party_b_id", ""), "type": c.get("relationship_type", ""), "intensity": c.get("intensity", 0)})
+        a_id = c.get("party_a_id", "")
+        b_id = c.get("party_b_id", "")
+        result.append({
+            "id": r["id"],
+            "party_a_id": a_id,
+            "party_b_id": b_id,
+            "party_a": char_names.get(a_id, a_id),
+            "party_b": char_names.get(b_id, b_id),
+            "type": c.get("relationship_type", ""),
+            "intensity": c.get("intensity", 0),
+            "dynamic": c.get("dynamic", ""),
+            "evolution": c.get("evolution", ""),
+        })
     return result
 
 
@@ -161,18 +204,37 @@ def get_information_check(project_id: str):
     import json
     conn = get_connection()
     chapters = conn.execute("SELECT chapter_num, content FROM chapters WHERE project_id = ? AND content IS NOT NULL", (project_id,)).fetchall()
-    char_boundaries = {}
-    chars = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'INFORMATION_BOUNDARY'", (project_id,)).fetchall()
+    boundaries = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'INFORMATION_BOUNDARY'", (project_id,)).fetchall()
+    chars = conn.execute("SELECT id, content FROM blocks WHERE project_id = ? AND type = 'CHARACTER'", (project_id,)).fetchall()
     conn.close()
+    char_names = {}
     for c in chars:
         cc = json.loads(c["content"] or "{}")
-        char_boundaries[c["id"]] = {"doesnt_know": [k.get("info", "") for k in cc.get("confirmed_knowledge", [])]}
+        char_names[c["id"]] = cc.get("name", c["id"])
+    char_boundaries = {}
+    for b in boundaries:
+        bc = json.loads(b["content"] or "{}")
+        owner_id = bc.get("character_id", b["id"])
+        doesnt_know = []
+        for item in bc.get("wrongly_believes", []):
+            if isinstance(item, dict):
+                doesnt_know.append(item.get("belief", item.get("info", "")))
+            elif isinstance(item, str) and item:
+                doesnt_know.append(item)
+        for item in bc.get("confirmed_knowledge", []):
+            if isinstance(item, dict):
+                info_text = item.get("info", "")
+                if info_text and item.get("source") == "meta":
+                    doesnt_know.append(info_text)
+        if doesnt_know:
+            char_boundaries[owner_id] = {"doesnt_know": [x for x in doesnt_know if x], "name": char_names.get(owner_id, owner_id)}
     validator = InformationValidator()
     all_violations = []
     for ch in chapters:
         violations = validator.validate(ch["content"] or "", char_boundaries)
         for v in violations:
             v["chapter_num"] = ch["chapter_num"]
+            v["character_name"] = char_names.get(v.get("character", ""), v.get("character", ""))
             all_violations.append(v)
     return {"violations": all_violations, "total": len(all_violations)}
 

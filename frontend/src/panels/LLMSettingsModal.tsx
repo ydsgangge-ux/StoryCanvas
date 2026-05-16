@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import * as settingsApi from '../api/settings';
+import { t } from '../i18n';
 
 interface ProviderConfig {
   label: string;
@@ -24,8 +25,8 @@ const PROVIDERS: ProviderConfig[] = [
     isLocal: false,
     fields: [
       { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
-      { key: 'model', label: '模型', type: 'select', placeholder: '选择或输入模型', options: ['deepseek-chat', 'deepseek-reasoner'], editable: true },
-      { key: 'base_url', label: 'API 地址', type: 'url', placeholder: 'https://api.deepseek.com/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['deepseek-chat', 'deepseek-reasoner'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.deepseek.com/v1' },
     ],
   },
   {
@@ -34,8 +35,8 @@ const PROVIDERS: ProviderConfig[] = [
     isLocal: false,
     fields: [
       { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
-      { key: 'model', label: '模型', type: 'select', placeholder: '选择或输入模型', options: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1', 'o1-mini', 'o3-mini'], editable: true },
-      { key: 'base_url', label: 'API 地址', type: 'url', placeholder: 'https://api.openai.com/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1', 'o1-mini', 'o3-mini'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.openai.com/v1' },
     ],
   },
   {
@@ -44,8 +45,8 @@ const PROVIDERS: ProviderConfig[] = [
     isLocal: false,
     fields: [
       { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-ant-...' },
-      { key: 'model', label: '模型', type: 'select', placeholder: '选择或输入模型', options: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'], editable: true },
-      { key: 'base_url', label: 'API 地址', type: 'url', placeholder: 'https://api.anthropic.com' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.anthropic.com' },
     ],
   },
   {
@@ -53,27 +54,27 @@ const PROVIDERS: ProviderConfig[] = [
     value: 'gemini',
     isLocal: false,
     fields: [
-      { key: 'api_key', label: 'API Key', type: 'password', placeholder: '输入 Gemini API Key' },
-      { key: 'model', label: '模型', type: 'select', placeholder: '选择或输入模型', options: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.0-pro'], editable: true },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.input_gemini_key') },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.0-pro'], editable: true },
     ],
   },
   {
-    label: 'Ollama (本地)',
+    label: t('llm.ollama_local'),
     value: 'ollama',
     isLocal: true,
     fields: [
-      { key: 'base_url', label: '服务地址', type: 'url', placeholder: 'http://localhost:11434' },
-      { key: 'model', label: '模型', type: 'select', placeholder: '选择或输入本地模型', options: ['llama3.1', 'llama3.2', 'qwen2.5', 'mistral', 'mixtral', 'gemma2', 'deepseek-r1'], editable: true },
+      { key: 'base_url', label: t('llm.service_url'), type: 'url', placeholder: 'http://localhost:11434' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_local_model'), options: ['llama3.1', 'llama3.2', 'qwen2.5', 'mistral', 'mixtral', 'gemma2', 'deepseek-r1'], editable: true },
     ],
   },
   {
-    label: '自定义 (OpenAI兼容)',
+    label: t('llm.custom_openai_compat'),
     value: 'custom',
     isLocal: false,
     fields: [
-      { key: 'base_url', label: 'API 地址', type: 'url', placeholder: 'https://your-api.com/v1' },
-      { key: 'api_key', label: 'API Key', type: 'password', placeholder: '可选' },
-      { key: 'model', label: '模型名称', type: 'text', placeholder: '输入模型名称' },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://your-api.com/v1' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.optional') },
+      { key: 'model', label: t('llm.model_name'), type: 'text', placeholder: t('llm.input_model_name') },
     ],
   },
 ];
@@ -190,18 +191,18 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ width: 560 }}>
         <h2 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-          🤖 大模型设置
+          🤖 {t('llm.title')}
         </h2>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <span className="loading-spinner" /> 加载中...
+            <span className="loading-spinner" /> {t('common.loading')}
           </div>
         ) : (
           <>
             {/* Provider Selection */}
             <div className="form-group">
-              <label className="form-label">选择提供商</label>
+              <label className="form-label">{t('llm.select_provider')}</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {PROVIDERS.map((p) => (
                   <button
@@ -211,7 +212,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                     style={{ fontSize: 12 }}
                   >
                     {p.label}
-                    {p.isLocal && <span style={{ fontSize: 10, opacity: 0.7 }}> 本地</span>}
+                    {p.isLocal && <span style={{ fontSize: 10, opacity: 0.7 }}> {t('llm.local')}</span>}
                   </button>
                 ))}
               </div>
@@ -250,12 +251,12 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                             style={{ flex: 1 }}
                           >
                             {value && !options.includes(value) && (
-                              <option value="__custom__">自定义: {value}</option>
+                              <option value="__custom__">{t('llm.custom')}: {value}</option>
                             )}
                             {options.map((opt) => (
                               <option key={opt} value={opt}>{opt}</option>
                             ))}
-                            {field.editable && <option value="__custom__">✏️ 自定义输入...</option>}
+                            {field.editable && <option value="__custom__">✏️ {t('llm.custom_input')}...</option>}
                           </select>
                           {field.editable && (
                             <input
@@ -263,7 +264,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                               type="text"
                               value={!options.includes(value) && value ? value : ''}
                               onChange={(e) => handleFieldChange(selectedProvider, field.key, e.target.value)}
-                              placeholder="输入自定义模型名"
+                              placeholder={t('llm.input_custom_model')}
                               style={{ width: 140, display: !options.includes(value) && value ? 'block' : value === '' ? 'block' : 'none' }}
                             />
                           )}
@@ -271,7 +272,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                             <button
                               className="btn btn-sm"
                               onClick={handleRefreshOllamaModels}
-                              title="刷新本地模型列表"
+                              title={t('llm.refresh_local_models')}
                             >
                               {ollamaLoading ? <span className="loading-spinner" style={{ width: 12, height: 12 }} /> : '⟳'}
                             </button>
@@ -294,7 +295,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                                 const el = document.querySelector(`[data-field="${field.key}"]`) as HTMLInputElement;
                                 if (el) el.type = el.type === 'password' ? 'text' : 'password';
                               }}
-                              title="显示/隐藏"
+                              title={t('llm.show_hide')}
                             >
                               👁
                             </button>
@@ -314,7 +315,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                 onClick={handleTestConnection}
                 disabled={testing}
               >
-                {testing ? <><span className="loading-spinner" style={{ width: 12, height: 12 }} /> 测试中...</> : '🔄 测试连接'}
+                {testing ? <><span className="loading-spinner" style={{ width: 12, height: 12 }} /> {t('llm.testing')}</> : `🔄 ${t('llm.test_connection')}`}
               </button>
 
               {testResult && (
@@ -329,17 +330,17 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                   wordBreak: 'break-all',
                 }}>
                   {testResult.success
-                    ? `✓ 连接成功: ${testResult.response || ''}`
-                    : `✗ 连接失败: ${testResult.error || '未知错误'}`}
+                    ? `✓ ${t('llm.connection_success')}: ${testResult.response || ''}`
+                    : `✗ ${t('llm.connection_failed')}: ${testResult.error || t('llm.unknown_error')}`}
                 </div>
               )}
             </div>
 
             {/* Footer */}
             <div style={{ marginTop: 20, display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
-              <button className="btn" onClick={onClose}>取消</button>
+              <button className="btn" onClick={onClose}>{t('common.cancel')}</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? '保存中...' : '💾 保存'}
+                {saving ? t('llm.saving') : `💾 ${t('common.save')}`}
               </button>
             </div>
           </>

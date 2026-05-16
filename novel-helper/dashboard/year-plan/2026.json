@@ -1,0 +1,45 @@
+{
+  "year": 2026,
+  "title": "专注成长，拥抱变化",
+  "category": "学习",
+  "summary": "把年度目标拆成可执行的季度成果，围绕写作、设定、发布和复盘形成稳定节奏。",
+  "progress": 0.7,
+  "completedGoals": 2,
+  "totalGoals": 4,
+  "tags": [
+    "阅读",
+    "工作",
+    "健康",
+    "写作"
+  ],
+  "goals": [
+    {
+      "id": "yg-1",
+      "title": "完成主线大纲与核心角色档案",
+      "quarter": "Q1",
+      "status": "done",
+      "progress": 100
+    },
+    {
+      "id": "yg-2",
+      "title": "稳定每周章节计划与复盘流程",
+      "quarter": "Q2",
+      "status": "done",
+      "progress": 100
+    },
+    {
+      "id": "yg-3",
+      "title": "完成第一卷修订与设定一致性检查",
+      "quarter": "Q3",
+      "status": "doing",
+      "progress": 62
+    },
+    {
+      "id": "yg-4",
+      "title": "准备样章、简介和发布材料",
+      "quarter": "Q4",
+      "status": "todo",
+      "progress": 18
+    }
+  ]
+}
