@@ -268,6 +268,16 @@ COMPLETENESS_RULES = {
         "valley_points": 0.20,
         "overall_trajectory": 0.20,
     },
+    # ─── 分镜头脚本类（1种） ─────────────────────────────────────
+    "STORYBOARD": {
+        "chapter_number": 0.05,
+        "title": 0.05,
+        "shots": 0.40,
+        "total_shots": 0.10,
+        "estimated_duration": 0.10,
+        "visual_style": 0.15,
+        "music_suggestion": 0.15,
+    },
 }
 
 

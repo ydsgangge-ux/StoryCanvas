@@ -544,7 +544,7 @@ const BLOCK_GROUPS: { label: string; types: string[] }[] = [
   { label: 'category.expression', types: ['ATMOSPHERE', 'EMOTION_TARGET', 'RHYTHM', 'THEME_STATEMENT', 'LENS'] },
   { label: 'category.screenplay', types: ['SCENE_HEADING', 'ACTION_LINE', 'DIALOGUE', 'VISUAL_MOTIF'] },
   { label: 'category.outline', types: ['STORY_OUTLINE', 'STORY_SYNOPSIS', 'CHAPTER_OUTLINE', 'CHAPTER_DETAIL'] },
-  { label: 'category.special', types: ['READER_EMOTION_CURVE', 'STORY_CARD'] },
+  { label: 'category.special', types: ['READER_EMOTION_CURVE', 'STORY_CARD', 'STORYBOARD'] },
 ];
 
 const AddBlockMenu: React.FC<{ onAdd: (type: string) => void }> = ({ onAdd }) => {

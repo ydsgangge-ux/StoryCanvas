@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
@@ -465,8 +466,6 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
     try:
         generated = json.loads(result)
     except json.JSONDecodeError:
-        # 尝试提取JSON
-        import re
         match = re.search(r'\{.*\}', result, re.DOTALL)
         if match:
             generated = json.loads(match.group())
@@ -514,6 +513,8 @@ def _get_connected_blocks(conn, block_id: str, project_id: str) -> list:
             title = content.get("name", "")
         elif r["type"] == "GOAL":
             title = content.get("surface_goal", "")
+        elif r["type"] == "STORYBOARD":
+            title = content.get("title", "分镜头脚本")
         else:
             title = r["type"]
 
@@ -755,6 +756,136 @@ def _format_timelines(timelines: list) -> str:
     if not timelines:
         return "无"
     return "\n".join(f"- {t['name']} ({t['type']})" for t in timelines)
+
+
+@router.post("/api/projects/{project_id}/generate/storyboard/{chapter_num}")
+async def generate_storyboard(project_id: str, chapter_num: int, req: dict = None):
+    """将章节正文转化为分镜头脚本，自动创建 STORYBOARD 块"""
+    conn = get_connection()
+    project = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+    if not project:
+        conn.close()
+        raise HTTPException(404, "项目不存在")
+
+    chapter = conn.execute(
+        "SELECT * FROM chapters WHERE project_id = ? AND chapter_num = ?",
+        (project_id, chapter_num)
+    ).fetchone()
+    if not chapter or not chapter["content"]:
+        conn.close()
+        raise HTTPException(400, f"第{chapter_num}章没有正文，请先生成章节内容")
+
+    chapter_title = chapter["title"] or f"第{chapter_num}章"
+    chapter_content = chapter["content"]
+
+    style_sig = {}
+    if project["style_sig"]:
+        try:
+            style_sig = json.loads(project["style_sig"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    conn.close()
+
+    llm = create_llm()
+    system_prompt = """你是一位资深影视分镜头脚本编剧。你的任务是将小说正文转化为专业的分镜头脚本。
+
+输出严格的JSON格式，包含以下字段：
+{
+  "chapter_number": 章节号(数字),
+  "title": "章节标题",
+  "shots": [
+    {
+      "shot_number": 镜头编号(从1开始),
+      "shot_size": "景别(远景/全景/中景/近景/特写/大特写)",
+      "description": "画面描述(观众看到什么，要具体、可视化)",
+      "audio": "声音设计(环境音/音效/音乐)",
+      "dialogue": "对白(如有，含角色名)",
+      "duration": "预估时长(如3秒/5秒/10秒)",
+      "transition": "转场方式(切至/淡入/淡出/叠化/划变)",
+      "notes": "备注(特效/情绪/重点)"
+    }
+  ],
+  "total_shots": 镜头总数,
+  "estimated_duration": "预估总时长(如3分钟/5分钟)",
+  "visual_style": "视觉风格描述(如冷色调、高对比、暖黄光)",
+  "music_suggestion": "配乐建议"
+}
+
+要求：
+1. 每个场景切换必须拆分为新镜头
+2. 景别要有变化，不能全是中景
+3. 画面描述要可视化、具体，不要抽象描述
+4. 对白要标注角色名
+5. 转场方式要合理
+6. 镜头数量要充分覆盖章节内容，不要遗漏重要情节
+7. 直接输出JSON，不要加markdown标记"""
+
+    style_info = ""
+    if style_sig:
+        parts = []
+        if style_sig.get("prose_style"):
+            parts.append(f"文风: {style_sig['prose_style']}")
+        if style_sig.get("narrative_pov"):
+            parts.append(f"叙事视角: {style_sig['narrative_pov']}")
+        if style_sig.get("tone"):
+            parts.append(f"基调: {','.join(style_sig['tone'])}")
+        if parts:
+            style_info = f"\n\n作品风格信息: {'; '.join(parts)}"
+
+    user_prompt = f"请将以下小说正文转化为分镜头脚本：\n\n## {chapter_title}\n\n{chapter_content}{style_info}"
+
+    result = await llm.chat(system_prompt, user_prompt, temperature=0.6)
+
+    result = result.strip()
+    if result.startswith("```"):
+        result = result.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    if result.startswith("```json"):
+        result = result[7:].rsplit("```", 1)[0].strip()
+
+    try:
+        storyboard_data = json.loads(result)
+    except json.JSONDecodeError:
+        match = re.search(r'\{.*\}', result, re.DOTALL)
+        if match:
+            storyboard_data = json.loads(match.group())
+        else:
+            raise HTTPException(500, "LLM输出无法解析为JSON")
+
+    if "shots" not in storyboard_data:
+        storyboard_data["shots"] = []
+    if "chapter_number" not in storyboard_data:
+        storyboard_data["chapter_number"] = chapter_num
+    if "title" not in storyboard_data:
+        storyboard_data["title"] = chapter_title
+
+    storyboard_data["total_shots"] = len(storyboard_data["shots"])
+
+    conn = get_connection()
+    block_id = str(uuid.uuid4())
+    conn.execute(
+        """INSERT INTO blocks (id, project_id, type, canvas_x, canvas_y, canvas_w, collapsed,
+           color, timeline_id, chapter_pos, tags, notes, content, is_draft, on_canvas)
+           VALUES (?, ?, 'STORYBOARD', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (block_id, project_id,
+         100 + (chapter_num % 5) * 320, 200 + (chapter_num // 5) * 400,
+         320, 0, '#FF6347', None, str(chapter_num),
+         '[]', '',
+         json.dumps(storyboard_data, ensure_ascii=False),
+         0, 0)
+    )
+    conn.commit()
+    conn.close()
+
+    return {
+        "block_id": block_id,
+        "chapter_number": chapter_num,
+        "title": storyboard_data.get("title", chapter_title),
+        "total_shots": storyboard_data["total_shots"],
+        "estimated_duration": storyboard_data.get("estimated_duration", ""),
+        "visual_style": storyboard_data.get("visual_style", ""),
+        "music_suggestion": storyboard_data.get("music_suggestion", ""),
+    }
 
 
 def _format_characters(characters: list) -> str:

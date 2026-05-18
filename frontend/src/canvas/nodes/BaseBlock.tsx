@@ -18,6 +18,7 @@ const BLOCK_ICONS: Record<string, string> = {
   CHAPTER_OUTLINE: '☷',
   CHAPTER_DETAIL: '☰',
   STORY_SYNOPSIS: '📖',
+  STORYBOARD: '🎬',
 };
 
 function getBlockTitle(data: BlockData): string {
@@ -56,6 +57,7 @@ function getBlockTitle(data: BlockData): string {
   if (data.type === 'CHAPTER_OUTLINE') return `${t('field.chapter')}${c.chapter_number || '?'} ${c.title || t('block.outline')}`;
   if (data.type === 'CHAPTER_DETAIL') return `${t('field.chapter')}${c.chapter_number || '?'}${t('block.detail')}: ${c.title || ''}`;
   if (data.type === 'STORY_SYNOPSIS') return c.title || t('block.story_synopsis');
+  if (data.type === 'STORYBOARD') return `${t('field.chapter')}${c.chapter_number || '?'} ${c.title || t('block.STORYBOARD')}`;
   return t(`block.${data.type}`);
 }
 
@@ -251,6 +253,12 @@ function getBlockSummary(data: BlockData): { label: string; value: string | unde
       return [
         { label: t('summary.trajectory'), value: c.overall_trajectory || '?' },
         { label: t('summary.peak'), value: trunc(c.peak_points, 25) },
+      ];
+    case 'STORYBOARD':
+      return [
+        { label: t('field.total_shots'), value: c.total_shots ? `${c.total_shots}` : '?' },
+        { label: t('field.visual_style'), value: trunc(c.visual_style, 25) },
+        { label: t('field.estimated_duration'), value: c.estimated_duration || '?' },
       ];
     default:
       return [];

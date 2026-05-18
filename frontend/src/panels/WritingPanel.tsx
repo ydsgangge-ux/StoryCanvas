@@ -64,6 +64,7 @@ const WritingPanel: React.FC = () => {
   // Rewrite state
   const [rewriteInstruction, setRewriteInstruction] = useState('');
   const [isRewriting, setIsRewriting] = useState(false);
+  const [isStoryboarding, setIsStoryboarding] = useState(false);
   const outputRef = useRef<HTMLTextAreaElement>(null);
 
   // ─── 风格设置 ─────────────────────────────────
@@ -326,6 +327,37 @@ const WritingPanel: React.FC = () => {
     setIsRewriting(false);
   };
 
+  const handleConvertStoryboard = async () => {
+    if (!currentProject) return;
+    setIsStoryboarding(true);
+    showToast(t('writing.storyboard_converting'));
+    try {
+      const res = await fetch(`/api/projects/${currentProject.id}/generate/storyboard/${chapterNum}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(t('writing.storyboard_complete', {
+          shots: data.total_shots,
+          duration: data.estimated_duration || t('writing.storyboard_unknown_duration'),
+        }));
+        loadProject(currentProject.id);
+      } else {
+        const errText = await res.text();
+        try {
+          const errJson = JSON.parse(errText);
+          showToast(errJson.detail || t('writing.storyboard_failed'), 'error');
+        } catch {
+          showToast(t('writing.storyboard_failed'), 'error');
+        }
+      }
+    } catch {
+      showToast(t('writing.storyboard_error'), 'error');
+    }
+    setIsStoryboarding(false);
+  };
+
   /** 保存正文到 chapters 表 */
   const handleSaveContent = async () => {
     if (!currentProject || !output.trim()) return;
@@ -509,6 +541,13 @@ const WritingPanel: React.FC = () => {
               <button className="btn" onClick={() => { setOutput(''); setStage(null); }} disabled={isGenerating}>{t('writing.clear')}</button>
               {output && mode === 'content' && (
                 <button className="btn btn-sm" onClick={handleSaveContent} style={{ color: '#50C878' }}>💾 {t('writing.save_content')}</button>
+              )}
+              {output && mode === 'content' && (
+                <button className="btn btn-sm" onClick={handleConvertStoryboard}
+                  disabled={isStoryboarding}
+                  style={{ background: 'linear-gradient(135deg, #FF6347, #FF8C00)', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}>
+                  {isStoryboarding ? <><span className="loading-spinner" style={{ width: 12, height: 12 }} /> {t('writing.storyboard_converting')}</> : `🎬 ${t('writing.convert_storyboard')}`}
+                </button>
               )}
             </div>
           )}

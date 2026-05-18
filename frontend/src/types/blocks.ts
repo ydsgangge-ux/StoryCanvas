@@ -10,7 +10,8 @@ export type BlockType =
   | 'ATMOSPHERE' | 'EMOTION_TARGET' | 'RHYTHM' | 'THEME_STATEMENT' | 'LENS'
   | 'SCENE_HEADING' | 'ACTION_LINE' | 'DIALOGUE' | 'VISUAL_MOTIF'
   | 'READER_EMOTION_CURVE'
-  | 'STORY_CARD' | 'STORY_OUTLINE' | 'CHAPTER_OUTLINE' | 'CHAPTER_DETAIL' | 'STORY_SYNOPSIS';
+  | 'STORY_CARD' | 'STORY_OUTLINE' | 'CHAPTER_OUTLINE' | 'CHAPTER_DETAIL' | 'STORY_SYNOPSIS'
+  | 'STORYBOARD';
 
 export type ConnType =
   | 'causes' | 'follows' | 'parallels' | 'foreshadows'
@@ -123,6 +124,7 @@ export const BLOCK_LABELS: Record<string, string> = {
   CHAPTER_OUTLINE: '章节大纲',
   CHAPTER_DETAIL: '章节细纲',
   STORY_SYNOPSIS: '故事简介',
+  STORYBOARD: '分镜头脚本',
 };
 
 // Connection type Chinese labels
@@ -177,6 +179,7 @@ export const BLOCK_COLORS: Record<string, string> = {
   CHAPTER_OUTLINE: '#A9A9A9',
   CHAPTER_DETAIL: '#808080',
   STORY_SYNOPSIS: '#B0C4DE',
+  STORYBOARD: '#FF6347',
 };
 
 // Block type category for progress bar
@@ -196,6 +199,7 @@ export const BLOCK_CATEGORIES: Record<string, string> = {
   CHAPTER_OUTLINE: 'structure',
   CHAPTER_DETAIL: 'structure',
   STORY_SYNOPSIS: 'structure',
+  STORYBOARD: 'structure',
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {

@@ -847,6 +847,21 @@ const zh: Record<string, string> = {
   'snapshot.restoring': '回滚中...',
   'snapshot.restore_to_version': '回滚到此版本',
 
+  'writing.convert_storyboard': '转分镜头',
+  'writing.storyboard_converting': '正在生成分镜头脚本...',
+  'writing.storyboard_complete': '分镜头脚本已生成！共{shots}个镜头，预估时长{duration}',
+  'writing.storyboard_failed': '分镜头脚本生成失败',
+  'writing.storyboard_error': '分镜头脚本生成出错',
+  'writing.storyboard_unknown_duration': '未知',
+
+  'field.visual_style': '视觉风格',
+  'field.music_suggestion': '配乐建议',
+  'field.estimated_duration': '预估时长',
+  'field.total_shots': '镜头总数',
+  'field.shots_list': '镜头列表',
+
+  'block.STORYBOARD': '分镜头脚本',
+
   'welcome_desc': '自由画布叙事创作系统。在画布上摆放、连接、组织叙事元素，AI 协助你将结构转化为高质量正文。',
   'lang.switch_to_en': 'English',
   'lang.switch_to_zh': '中文',

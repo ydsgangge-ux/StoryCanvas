@@ -282,6 +282,14 @@ const FIELD_GROUPS: Record<string, { key: string; labelKey: string; type: 'text'
     { key: 'valley_points', labelKey: 'field.valley_points', type: 'textarea' },
     { key: 'overall_trajectory', labelKey: 'field.overall_trajectory', type: 'select', optionKeys: ['option.increasing', 'option.decreasing', 'option.wave', 'option.rise_after_fall', 'option.fall_after_rise', 'option.flat'] },
   ],
+  STORYBOARD: [
+    { key: 'chapter_number', labelKey: 'field.chapter_number', type: 'number' },
+    { key: 'title', labelKey: 'field.chapter_title', type: 'text' },
+    { key: 'visual_style', labelKey: 'field.visual_style', type: 'text' },
+    { key: 'music_suggestion', labelKey: 'field.music_suggestion', type: 'text' },
+    { key: 'estimated_duration', labelKey: 'field.estimated_duration', type: 'text' },
+    { key: 'total_shots', labelKey: 'field.total_shots', type: 'number' },
+  ],
 };
 
 const BlockEditor: React.FC = () => {
@@ -410,6 +418,65 @@ const BlockEditor: React.FC = () => {
           {fields.length === 0 && (
             <div style={{ color: '#6c6c80', fontSize: 13, padding: 20, textAlign: 'center' }}>
               {t('editor.no_fields')}
+            </div>
+          )}
+
+          {selectedBlock.type === 'STORYBOARD' && localContent.shots && Array.isArray(localContent.shots) && (
+            <div style={{ marginTop: 8, borderTop: '1px solid var(--border-color)', paddingTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#FF6347', marginBottom: 6 }}>
+                🎬 {t('field.shots_list')} ({localContent.shots.length})
+              </div>
+              <div style={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {localContent.shots.map((shot: any, idx: number) => (
+                  <div key={idx} style={{
+                    padding: '8px 10px', borderRadius: 6,
+                    background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                    borderLeft: '3px solid #FF6347', fontSize: 12,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: '#FF6347' }}>
+                        #{shot.shot_number || idx + 1}
+                      </span>
+                      <span style={{
+                        fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                        background: 'rgba(255,99,71,0.15)', color: '#FF6347',
+                      }}>
+                        {shot.shot_size || ''}
+                      </span>
+                    </div>
+                    {shot.description && (
+                      <div style={{ color: '#ddd', marginBottom: 3 }}>{shot.description}</div>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, fontSize: 10, color: '#888' }}>
+                      {shot.dialogue && (
+                        <span style={{ background: 'rgba(74,144,217,0.15)', color: '#4A90D9', padding: '1px 5px', borderRadius: 3 }}>
+                          💬 {shot.dialogue}
+                        </span>
+                      )}
+                      {shot.audio && (
+                        <span style={{ background: 'rgba(80,200,120,0.15)', color: '#50C878', padding: '1px 5px', borderRadius: 3 }}>
+                          🔊 {shot.audio}
+                        </span>
+                      )}
+                      {shot.duration && (
+                        <span style={{ background: 'rgba(243,156,18,0.15)', color: '#F39C12', padding: '1px 5px', borderRadius: 3 }}>
+                          ⏱ {shot.duration}
+                        </span>
+                      )}
+                      {shot.transition && (
+                        <span style={{ background: 'rgba(155,89,182,0.15)', color: '#9B59B6', padding: '1px 5px', borderRadius: 3 }}>
+                          ➡ {shot.transition}
+                        </span>
+                      )}
+                    </div>
+                    {shot.notes && (
+                      <div style={{ fontSize: 10, color: '#999', marginTop: 3, fontStyle: 'italic' }}>
+                        📝 {shot.notes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

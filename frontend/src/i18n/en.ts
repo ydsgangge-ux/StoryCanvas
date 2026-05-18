@@ -847,6 +847,21 @@ const en: Record<string, string> = {
   'snapshot.restoring': 'Restoring...',
   'snapshot.restore_to_version': 'Restore to this version',
 
+  'writing.convert_storyboard': 'To Storyboard',
+  'writing.storyboard_converting': 'Generating storyboard...',
+  'writing.storyboard_complete': 'Storyboard generated! {shots} shots, estimated {duration}',
+  'writing.storyboard_failed': 'Storyboard generation failed',
+  'writing.storyboard_error': 'Storyboard generation error',
+  'writing.storyboard_unknown_duration': 'Unknown',
+
+  'field.visual_style': 'Visual Style',
+  'field.music_suggestion': 'Music Suggestion',
+  'field.estimated_duration': 'Estimated Duration',
+  'field.total_shots': 'Total Shots',
+  'field.shots_list': 'Shots List',
+
+  'block.STORYBOARD': 'Storyboard',
+
   'welcome_desc': 'A free-canvas narrative creation system. Place, connect, and organize narrative elements on the canvas. AI transforms your structure into high-quality prose.',
   'lang.switch_to_en': 'English',
   'lang.switch_to_zh': '中文',
