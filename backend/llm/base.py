@@ -46,6 +46,13 @@ def create_llm() -> BaseLLM:
             model=settings.custom_model,
             base_url=settings.custom_base_url
         )
+    elif provider == "relay":
+        from backend.llm.openai_compat import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            api_key=settings.relay_api_key,
+            model=settings.relay_model,
+            base_url=settings.relay_base_url
+        )
     elif provider == "openai":
         from backend.llm.openai_compat import OpenAICompatibleProvider
         return OpenAICompatibleProvider(

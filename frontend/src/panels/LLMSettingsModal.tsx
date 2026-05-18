@@ -68,6 +68,16 @@ const PROVIDERS: ProviderConfig[] = [
     ],
   },
   {
+    label: t('llm.relay_station'),
+    value: 'relay',
+    isLocal: false,
+    fields: [
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://your-relay.com/v1' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.optional') },
+      { key: 'model', label: t('llm.model_name'), type: 'text', placeholder: 'gpt-4o / deepseek-chat / ...' },
+    ],
+  },
+  {
     label: t('llm.custom_openai_compat'),
     value: 'custom',
     isLocal: false,

@@ -807,6 +807,7 @@ const zh: Record<string, string> = {
   'llm.service_url': '服务地址',
   'llm.select_or_input_local_model': '选择或输入本地模型',
   'llm.custom_openai_compat': '自定义 (OpenAI兼容)',
+  'llm.relay_station': '中转站',
   'llm.optional': '可选',
   'llm.model_name': '模型名称',
   'llm.input_model_name': '输入模型名称',

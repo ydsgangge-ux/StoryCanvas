@@ -119,6 +119,22 @@ class Settings:
         cfg = self._llm_settings.get("configs", {}).get("custom", {})
         return cfg.get("model", os.getenv("CUSTOM_MODEL", ""))
 
+    # 中转站
+    @property
+    def relay_base_url(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("relay", {})
+        return cfg.get("base_url", os.getenv("RELAY_BASE_URL", ""))
+
+    @property
+    def relay_api_key(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("relay", {})
+        return cfg.get("api_key", os.getenv("RELAY_API_KEY", ""))
+
+    @property
+    def relay_model(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("relay", {})
+        return cfg.get("model", os.getenv("RELAY_MODEL", ""))
+
     # Server
     port: int = int(os.getenv("PORT", "8767"))
     database_path: str = os.getenv("DATABASE_PATH", "./backend/data/storycanvas.db")

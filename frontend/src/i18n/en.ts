@@ -807,6 +807,7 @@ const en: Record<string, string> = {
   'llm.service_url': 'Service URL',
   'llm.select_or_input_local_model': 'Select or input local model',
   'llm.custom_openai_compat': 'Custom (OpenAI Compatible)',
+  'llm.relay_station': 'Relay Station',
   'llm.optional': 'Optional',
   'llm.model_name': 'Model Name',
   'llm.input_model_name': 'Enter model name',
