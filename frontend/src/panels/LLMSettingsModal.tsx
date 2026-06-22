@@ -89,6 +89,78 @@ const PROVIDERS: ProviderConfig[] = [
   },
 ];
 
+// 图片生成提供商配置
+const IMAGE_PROVIDERS: ProviderConfig[] = [
+  {
+    label: '智谱 CogView',
+    value: 'zhipu_image',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('image.input_zhipu_key') },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://open.bigmodel.cn/api/paas/v4' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: '', options: ['cogview-3-flash', 'cogview-3-plus'], editable: true },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '768x1344', '864x1152', '1344x768', '1152x864', '1440x720', '720x1440'] },
+    ],
+  },
+  {
+    label: '硅基流动 SiliconFlow',
+    value: 'siliconflow_image',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('image.input_siliconflow_key') },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.siliconflow.cn/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: '', options: ['black-forest-labs/FLUX.1-schnell', 'stabilityai/stable-diffusion-3-medium', 'stabilityai/stable-diffusion-xl-base-1.0', 'Kwai-Kolors/Kolors'], editable: true },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '1024x1792', '1792x1024', '512x512'] },
+    ],
+  },
+  {
+    label: '通义万相',
+    value: 'tongyi_image',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('image.input_tongyi_key') },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: '', options: ['wanx2.1-t2i-turbo', 'wanx2.1-t2i-plus', 'wanx-v1'], editable: true },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '720x1280', '1280x720'] },
+    ],
+  },
+  {
+    label: 'OpenAI DALL-E',
+    value: 'openai_image',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.openai.com/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: '', options: ['dall-e-3', 'dall-e-2'], editable: true },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '1024x1792', '1792x1024'] },
+      { key: 'quality', label: t('image.quality'), type: 'select', placeholder: '', options: ['standard', 'hd'] },
+    ],
+  },
+  {
+    label: t('llm.relay_station'),
+    value: 'relay_image',
+    isLocal: false,
+    fields: [
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://your-relay.com/v1' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.optional') },
+      { key: 'model', label: t('llm.model_name'), type: 'text', placeholder: 'dall-e-3 / flux / ...' },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '1024x1792', '1792x1024'] },
+      { key: 'quality', label: t('image.quality'), type: 'select', placeholder: '', options: ['standard', 'hd'] },
+    ],
+  },
+  {
+    label: t('llm.custom_openai_compat'),
+    value: 'custom_image',
+    isLocal: false,
+    fields: [
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://your-api.com/v1' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.optional') },
+      { key: 'model', label: t('llm.model_name'), type: 'text', placeholder: 'dall-e-3 / stable-diffusion / ...' },
+      { key: 'size', label: t('image.size'), type: 'select', placeholder: '', options: ['1024x1024', '1024x1792', '1792x1024', '512x512'] },
+    ],
+  },
+];
+
 interface LLMSettingsModalProps {
   onClose: () => void;
   onSave: () => void;
@@ -103,6 +175,8 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; response?: string; error?: string } | null>(null);
   const [ollamaLoading, setOllamaLoading] = useState(false);
+  const [imageProvider, setImageProvider] = useState('zhipu_image');
+  const [imageConfigs, setImageConfigs] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     loadSettings();
@@ -123,6 +197,17 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
         };
       }
       setConfigs(merged);
+
+      // 加载图片生成配置
+      setImageProvider(data.image_provider || 'openai_image');
+      const imageMerged: Record<string, Record<string, string>> = {};
+      for (const p of IMAGE_PROVIDERS) {
+        imageMerged[p.value] = {
+          ...getDefaultImageConfig(p.value),
+          ...(data.image_configs?.[p.value] || {}),
+        };
+      }
+      setImageConfigs(imageMerged);
 
       // Load Ollama models if available
       try {
@@ -150,6 +235,27 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
     if (provider === 'claude') cfg.base_url = 'https://api.anthropic.com';
     if (provider === 'ollama') cfg.base_url = 'http://localhost:11434';
     return cfg;
+  };
+
+  const getDefaultImageConfig = (provider: string): Record<string, string> => {
+    const p = IMAGE_PROVIDERS.find((x) => x.value === provider);
+    if (!p) return {};
+    const cfg: Record<string, string> = {};
+    for (const f of p.fields) {
+      cfg[f.key] = '';
+    }
+    if (provider === 'openai_image') cfg.base_url = 'https://api.openai.com/v1';
+    if (provider === 'zhipu_image') cfg.base_url = 'https://open.bigmodel.cn/api/paas/v4';
+    if (provider === 'siliconflow_image') cfg.base_url = 'https://api.siliconflow.cn/v1';
+    if (provider === 'tongyi_image') cfg.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    return cfg;
+  };
+
+  const handleImageFieldChange = (provider: string, key: string, value: string) => {
+    setImageConfigs((prev) => ({
+      ...prev,
+      [provider]: { ...(prev[provider] || {}), [key]: value },
+    }));
   };
 
   const handleFieldChange = (provider: string, key: string, value: string) => {
@@ -185,7 +291,7 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await settingsApi.saveSettings(selectedProvider, configs);
+      await settingsApi.saveSettings(selectedProvider, configs, imageProvider, imageConfigs);
       onSave();
       onClose();
     } catch (e: any) {
@@ -345,6 +451,95 @@ const LLMSettingsModal: React.FC<LLMSettingsModalProps> = ({ onClose, onSave }) 
                 </div>
               )}
             </div>
+
+            {/* ─── 图片生成设置 ─── */}
+            <div style={{ height: 1, background: 'var(--border-color)', margin: '16px 0' }} />
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              🎨 {t('image.settings_title')}
+            </h3>
+
+            {/* Image Provider Selection */}
+            <div className="form-group">
+              <label className="form-label">{t('image.select_provider')}</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {IMAGE_PROVIDERS.map((p) => (
+                  <button
+                    key={p.value}
+                    className={`btn btn-sm ${imageProvider === p.value ? 'btn-primary' : ''}`}
+                    onClick={() => setImageProvider(p.value)}
+                    style={{ fontSize: 12 }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-color)', margin: '8px 0' }} />
+
+            {/* Image Config Fields */}
+            {(() => {
+              const imgProvider = IMAGE_PROVIDERS.find((p) => p.value === imageProvider);
+              const imgConfig = imageConfigs[imageProvider] || {};
+              if (!imgProvider) return null;
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {imgProvider.fields.map((field) => {
+                    const value = imgConfig[field.key] || '';
+                    const isPassword = field.type === 'password';
+                    const isSelect = field.type === 'select';
+                    const options = field.options || [];
+
+                    return (
+                      <div className="form-group" key={field.key} style={{ marginBottom: 0 }}>
+                        <label className="form-label">{field.label}</label>
+                        {isSelect && options.length > 0 ? (
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <select
+                              className="form-select"
+                              value={options.includes(value) ? value : '__custom__'}
+                              onChange={(e) => {
+                                if (e.target.value !== '__custom__') {
+                                  handleImageFieldChange(imageProvider, field.key, e.target.value);
+                                }
+                              }}
+                              style={{ flex: 1 }}
+                            >
+                              {value && !options.includes(value) && (
+                                <option value="__custom__">{t('llm.custom')}: {value}</option>
+                              )}
+                              {options.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                              {field.editable && <option value="__custom__">✏️ {t('llm.custom_input')}...</option>}
+                            </select>
+                            {field.editable && (
+                              <input
+                                className="form-input"
+                                type="text"
+                                value={!options.includes(value) && value ? value : ''}
+                                onChange={(e) => handleImageFieldChange(imageProvider, field.key, e.target.value)}
+                                placeholder={t('llm.input_custom_model')}
+                                style={{ width: 140, display: !options.includes(value) && value ? 'block' : value === '' ? 'block' : 'none' }}
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <input
+                            className="form-input"
+                            type={isPassword ? 'password' : 'text'}
+                            value={value}
+                            onChange={(e) => handleImageFieldChange(imageProvider, field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            style={{ flex: 1 }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* Footer */}
             <div style={{ marginTop: 20, display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>

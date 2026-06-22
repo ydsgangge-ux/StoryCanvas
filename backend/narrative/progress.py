@@ -270,13 +270,17 @@ COMPLETENESS_RULES = {
     },
     # ─── 分镜头脚本类（1种） ─────────────────────────────────────
     "STORYBOARD": {
-        "chapter_number": 0.05,
-        "title": 0.05,
-        "shots": 0.40,
-        "total_shots": 0.10,
-        "estimated_duration": 0.10,
-        "visual_style": 0.15,
-        "music_suggestion": 0.15,
+        "chapter_number": 0.03,
+        "title": 0.03,
+        "shots": 0.30,
+        "total_shots": 0.05,
+        "estimated_duration": 0.05,
+        "visual_style": 0.10,
+        "music_suggestion": 0.08,
+        # 镜头级字段（检查shots数组中各字段填充率）
+        "camera_angle": 0.10,
+        "camera_movement": 0.10,
+        "music_note": 0.06,
     },
 }
 
@@ -289,6 +293,32 @@ def calculate_completeness(block_type: str, content: dict) -> float:
         filled = sum(1 for v in content.values() if v != "" and v != [] and v != {})
         total = len(content) or 1
         return round(min(filled / total, 1.0), 2)
+
+    # STORYBOARD 特殊处理：镜头级字段检查 shots 数组内填充率
+    if block_type == "STORYBOARD":
+        shots = content.get("shots", [])
+        shot_level_fields = ["camera_angle", "camera_movement", "music_note"]
+        total_weight = 0.0
+
+        for field, weight in rules.items():
+            value = content.get(field)
+            # 镜头级字段：检查 shots 数组中该字段的填充率
+            if field in shot_level_fields:
+                if shots and len(shots) > 0:
+                    filled_count = sum(1 for s in shots if s.get(field, "").strip())
+                    fill_ratio = filled_count / len(shots)
+                    total_weight += weight * fill_ratio
+                # shots 为空则该项得0分
+            elif isinstance(value, str) and value.strip():
+                total_weight += weight
+            elif isinstance(value, list) and len(value) > 0:
+                total_weight += weight
+            elif isinstance(value, dict) and len(value) > 0:
+                total_weight += weight
+            elif value is not None and not isinstance(value, (str, list, dict)):
+                total_weight += weight
+
+        return round(min(total_weight, 1.0), 2)
 
     total_weight = 0.0
     for field, weight in rules.items():

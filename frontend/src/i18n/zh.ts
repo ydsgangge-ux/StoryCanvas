@@ -856,11 +856,26 @@ const zh: Record<string, string> = {
 
   'field.visual_style': '视觉风格',
   'field.music_suggestion': '配乐建议',
+  'field.camera_angle': '机位角度',
+  'field.camera_movement': '运镜方式',
+  'field.music_note': '配乐情绪',
   'field.estimated_duration': '预估时长',
   'field.total_shots': '镜头总数',
   'field.shots_list': '镜头列表',
 
   'block.STORYBOARD': '分镜头脚本',
+
+  'image.settings_title': '图片生成设置',
+  'image.select_provider': '选择图片生成服务',
+  'image.size': '图片尺寸',
+  'image.quality': '图片质量',
+  'image.generate_for_shot': '为该镜头生成图片',
+  'image.generate_failed': '图片生成失败',
+  'image.generate_error': '图片生成出错',
+  'image.click_to_enlarge': '点击查看大图',
+  'image.input_zhipu_key': '输入智谱API Key（open.bigmodel.cn）',
+  'image.input_siliconflow_key': '输入硅基流动API Key（siliconflow.cn）',
+  'image.input_tongyi_key': '输入阿里云API Key（dashscope）',
 
   'welcome_desc': '自由画布叙事创作系统。在画布上摆放、连接、组织叙事元素，AI 协助你将结构转化为高质量正文。',
   'lang.switch_to_en': 'English',

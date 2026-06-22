@@ -759,7 +759,7 @@ def _format_timelines(timelines: list) -> str:
 
 
 @router.post("/api/projects/{project_id}/generate/storyboard/{chapter_num}")
-async def generate_storyboard(project_id: str, chapter_num: int, req: dict = None):
+async def generate_storyboard(project_id: str, chapter_num: int):
     """将章节正文转化为分镜头脚本，自动创建 STORYBOARD 块"""
     conn = get_connection()
     project = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
@@ -788,7 +788,7 @@ async def generate_storyboard(project_id: str, chapter_num: int, req: dict = Non
     conn.close()
 
     llm = create_llm()
-    system_prompt = """你是一位资深影视分镜头脚本编剧。你的任务是将小说正文转化为专业的分镜头脚本。
+    system_prompt = """你是一位资深影视分镜头脚本编剧。你的任务是将小说正文转化为专业的、可直接指导实拍的分镜头脚本。
 
 输出严格的JSON格式，包含以下字段：
 {
@@ -798,28 +798,34 @@ async def generate_storyboard(project_id: str, chapter_num: int, req: dict = Non
     {
       "shot_number": 镜头编号(从1开始),
       "shot_size": "景别(远景/全景/中景/近景/特写/大特写)",
-      "description": "画面描述(观众看到什么，要具体、可视化)",
-      "audio": "声音设计(环境音/音效/音乐)",
+      "camera_angle": "机位角度(平视/俯拍/仰拍/鸟瞰/倾斜/主观视角/过肩)",
+      "camera_movement": "运镜方式(固定/推镜头/拉镜头/摇镜头/移镜头/跟拍/升降/环绕/手持晃动)",
+      "description": "画面描述(观众看到什么，要具体、可视化，结合机位和运镜描述构图)",
+      "audio": "声音设计(环境音/音效/现场声)",
       "dialogue": "对白(如有，含角色名)",
       "duration": "预估时长(如3秒/5秒/10秒)",
-      "transition": "转场方式(切至/淡入/淡出/叠化/划变)",
-      "notes": "备注(特效/情绪/重点)"
+      "transition": "转场方式(切至/淡入/淡出/叠化/划变/闪白)",
+      "music_note": "配乐情绪备注(该镜头的情绪基调、乐器暗示、节奏变化，如'低沉大提琴铺垫紧张感')",
+      "notes": "备注(特效/灯光/表演指导/剪辑重点)"
     }
   ],
   "total_shots": 镜头总数,
   "estimated_duration": "预估总时长(如3分钟/5分钟)",
-  "visual_style": "视觉风格描述(如冷色调、高对比、暖黄光)",
-  "music_suggestion": "配乐建议"
+  "visual_style": "视觉风格描述(如冷色调、高对比、暖黄光、胶片颗粒感)",
+  "music_suggestion": "整体配乐建议"
 }
 
 要求：
 1. 每个场景切换必须拆分为新镜头
-2. 景别要有变化，不能全是中景
-3. 画面描述要可视化、具体，不要抽象描述
-4. 对白要标注角色名
-5. 转场方式要合理
-6. 镜头数量要充分覆盖章节内容，不要遗漏重要情节
-7. 直接输出JSON，不要加markdown标记"""
+2. 景别要有变化，不能全是中景；景别选择要有叙事目的（建立环境用全景，强调情绪用特写）
+3. 机位角度必须明确：平视是默认，但情绪强烈时要用俯拍（压迫感）或仰拍（崇高感），主观视角用于代入角色
+4. 运镜方式必须具体：固定=稳定观察，推=聚焦/紧张，拉=揭示/疏离，摇=扫视环境，移=横向跟随，跟拍=角色行动
+5. 画面描述要可视化、具体，结合机位和运镜描述构图效果（如"俯拍全景：李明在人群中显得渺小"）
+6. 对白要标注角色名
+7. 转场方式要合理，注意相邻镜头的景别松紧节奏
+8. 每个镜头的music_note要单独写出该镜头的情绪配乐线索（不是整体音乐建议）
+9. 镜头数量要充分覆盖章节内容，不要遗漏重要情节
+10. 直接输出JSON，不要加markdown标记"""
 
     style_info = ""
     if style_sig:
@@ -837,20 +843,31 @@ async def generate_storyboard(project_id: str, chapter_num: int, req: dict = Non
 
     result = await llm.chat(system_prompt, user_prompt, temperature=0.6)
 
+    # 调试日志
+    print(f"[STORYBOARD] LLM返回长度: {len(result)}, 前500字符: {result[:500]}")
+
     result = result.strip()
-    if result.startswith("```"):
-        result = result.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    # 清理 markdown 代码块标记
     if result.startswith("```json"):
-        result = result[7:].rsplit("```", 1)[0].strip()
+        result = result[7:]
+    elif result.startswith("```"):
+        result = result[3:]
+    if result.endswith("```"):
+        result = result[:-3]
+    result = result.strip()
 
     try:
         storyboard_data = json.loads(result)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', result, re.DOTALL)
+        # 尝试提取 JSON 对象
+        match = re.search(r'\{[\s\S]*\}', result)
         if match:
-            storyboard_data = json.loads(match.group())
+            try:
+                storyboard_data = json.loads(match.group())
+            except json.JSONDecodeError:
+                raise HTTPException(500, f"LLM输出无法解析为JSON，原始输出前200字符: {result[:200]}")
         else:
-            raise HTTPException(500, "LLM输出无法解析为JSON")
+            raise HTTPException(500, f"LLM输出中未找到JSON，原始输出前200字符: {result[:200]}")
 
     if "shots" not in storyboard_data:
         storyboard_data["shots"] = []
@@ -858,6 +875,16 @@ async def generate_storyboard(project_id: str, chapter_num: int, req: dict = Non
         storyboard_data["chapter_number"] = chapter_num
     if "title" not in storyboard_data:
         storyboard_data["title"] = chapter_title
+
+    # 检查 shots 是否为空，尝试从其他可能的字段名中提取
+    if len(storyboard_data["shots"]) == 0:
+        for alt_key in ["shot_list", "镜头列表", "shot_list", "scenes", "scene_list"]:
+            if alt_key in storyboard_data and isinstance(storyboard_data[alt_key], list):
+                print(f"[STORYBOARD] shots为空，从备用字段 '{alt_key}' 提取到 {len(storyboard_data[alt_key])} 个镜头")
+                storyboard_data["shots"] = storyboard_data[alt_key]
+                break
+
+    print(f"[STORYBOARD] 解析结果: shots数量={len(storyboard_data['shots'])}, 所有顶级键={list(storyboard_data.keys())}")
 
     storyboard_data["total_shots"] = len(storyboard_data["shots"])
 
@@ -911,3 +938,118 @@ def extract_content(raw: str) -> str:
     if "[结算表]" in raw:
         return raw.split("[结算表]")[0].strip()
     return raw.strip()
+
+
+# ─── 图片生成 ──────────────────────────────────────────────────
+import os
+import base64
+import httpx
+
+IMAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "images")
+
+
+@router.post("/api/projects/{project_id}/generate/image")
+async def generate_image(project_id: str, req: dict):
+    """根据文字描述生成图片，保存到本地并返回路径"""
+    prompt = req.get("prompt", "")
+    shot_index = req.get("shot_index")  # 镜头索引，可选
+    block_id = req.get("block_id", "")
+
+    if not prompt:
+        raise HTTPException(400, "缺少图片描述(prompt)")
+
+    # 读取图片生成配置
+    image_provider = settings.image_provider
+    image_cfg = settings.image_config
+    api_key = image_cfg.get("api_key", "")
+    base_url = image_cfg.get("base_url", "https://api.openai.com/v1")
+    model = image_cfg.get("model", "dall-e-3")
+    size = image_cfg.get("size", "1024x1024")
+    quality = image_cfg.get("quality", "standard")
+
+    if not api_key:
+        raise HTTPException(400, "请先在设置中配置图片生成模型的API Key")
+
+    # 构建增强 prompt
+    enhanced_prompt = f"Cinematic storyboard frame: {prompt}. High quality, detailed, professional cinematography."
+
+    # 调用 OpenAI 兼容的图片生成 API
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            # 尝试 /v1/images/generations 端点
+            url = f"{base_url.rstrip('/')}/images/generations"
+            payload = {
+                "model": model,
+                "prompt": enhanced_prompt,
+                "n": 1,
+                "size": size,
+            }
+            if quality and model.startswith("dall-e"):
+                payload["quality"] = quality
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+
+            resp = await client.post(url, json=payload, headers=headers)
+            if resp.status_code != 200:
+                error_detail = ""
+                try:
+                    error_detail = resp.json().get("error", {}).get("message", resp.text[:200])
+                except Exception:
+                    error_detail = resp.text[:200]
+                raise HTTPException(resp.status_code, f"图片生成API错误: {error_detail}")
+
+            data = resp.json()
+            image_data = data.get("data", [])
+            if not image_data:
+                raise HTTPException(500, "图片生成API未返回图片数据")
+
+            # 获取图片 URL 或 base64
+            img_info = image_data[0]
+            img_url = img_info.get("url", "")
+            b64_json = img_info.get("b64_json", "")
+
+            # 下载或解码图片
+            os.makedirs(os.path.join(IMAGE_DIR, project_id), exist_ok=True)
+            img_filename = f"{block_id}_{shot_index}_{uuid.uuid4().hex[:8]}.png" if shot_index is not None else f"{block_id}_{uuid.uuid4().hex[:8]}.png"
+            img_path = os.path.join(IMAGE_DIR, project_id, img_filename)
+
+            if b64_json:
+                img_bytes = base64.b64decode(b64_json)
+            elif img_url:
+                img_resp = await client.get(img_url, timeout=60)
+                img_bytes = img_resp.content
+            else:
+                raise HTTPException(500, "图片生成API返回格式不支持")
+
+            with open(img_path, "wb") as f:
+                f.write(img_bytes)
+
+            # 返回图片相对路径
+            relative_path = f"/images/{project_id}/{img_filename}"
+
+            # 如果指定了 block_id 和 shot_index，更新块数据
+            if block_id and shot_index is not None:
+                conn = get_connection()
+                block = conn.execute("SELECT content FROM blocks WHERE id = ?", (block_id,)).fetchone()
+                if block:
+                    content = json.loads(block["content"] or "{}")
+                    shots = content.get("shots", [])
+                    if 0 <= shot_index < len(shots):
+                        shots[shot_index]["image"] = relative_path
+                        content["shots"] = shots
+                        conn.execute(
+                            "UPDATE blocks SET content = ? WHERE id = ?",
+                            (json.dumps(content, ensure_ascii=False), block_id)
+                        )
+                        conn.commit()
+                conn.close()
+
+            return {"image_path": relative_path, "prompt": enhanced_prompt}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"图片生成失败: {str(e)}")

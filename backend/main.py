@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, Dict
 from backend.core.database import init_db, get_connection
@@ -22,6 +23,8 @@ from backend.llm.ollama import OllamaProvider
 class LLMSettingsUpdate(BaseModel):
     provider: str
     configs: Dict[str, dict]
+    image_provider: Optional[str] = None
+    image_configs: Optional[Dict[str, dict]] = None
 
 
 @asynccontextmanager
@@ -64,6 +67,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 静态文件 - 图片生成结果
+IMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "images")
+os.makedirs(IMAGE_DIR, exist_ok=True)
+app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
 
 # Register routers
 app.include_router(projects.router)
@@ -319,6 +327,17 @@ def get_settings():
                     masked_cfg[key] = masked_cfg[key][:8] + "..." + masked_cfg[key][-4:] if len(masked_cfg[key]) > 16 else "****"
         masked_configs[provider_name] = masked_cfg
     masked["configs"] = masked_configs
+    # 图片生成配置
+    masked["image_provider"] = full.get("image_provider", "zhipu_image")
+    masked_image_configs = {}
+    for provider_name, cfg in full.get("image_configs", {}).items():
+        masked_cfg = dict(cfg)
+        for key in list(masked_cfg.keys()):
+            if "key" in key.lower() or "token" in key.lower() or "secret" in key.lower():
+                if masked_cfg[key]:
+                    masked_cfg[key] = masked_cfg[key][:8] + "..." + masked_cfg[key][-4:] if len(masked_cfg[key]) > 16 else "****"
+        masked_image_configs[provider_name] = masked_cfg
+    masked["image_configs"] = masked_image_configs
     # Add default models list for each provider
     masked["available_models"] = {
         "deepseek": ["deepseek-chat", "deepseek-reasoner"],
@@ -334,7 +353,12 @@ def get_settings():
 @app.put("/api/settings")
 def update_settings(req: LLMSettingsUpdate):
     """更新系统设置"""
-    settings.update_settings({"provider": req.provider, "configs": req.configs})
+    update_data = {"provider": req.provider, "configs": req.configs}
+    if req.image_provider is not None:
+        update_data["image_provider"] = req.image_provider
+    if req.image_configs is not None:
+        update_data["image_configs"] = req.image_configs
+    settings.update_settings(update_data)
     return {"message": "设置已保存", "provider": req.provider}
 
 

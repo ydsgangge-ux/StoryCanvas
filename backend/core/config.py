@@ -135,6 +135,38 @@ class Settings:
         cfg = self._llm_settings.get("configs", {}).get("relay", {})
         return cfg.get("model", os.getenv("RELAY_MODEL", ""))
 
+    # 图片生成模型
+    @property
+    def image_provider(self) -> str:
+        return self._llm_settings.get("image_provider", "zhipu_image")
+
+    @property
+    def image_config(self) -> dict:
+        """获取当前图片生成提供商的完整配置"""
+        provider = self.image_provider
+        configs = self._llm_settings.get("image_configs", {})
+        return configs.get(provider, {})
+
+    @property
+    def image_api_key(self) -> str:
+        return self.image_config.get("api_key", os.getenv("IMAGE_API_KEY", ""))
+
+    @property
+    def image_base_url(self) -> str:
+        return self.image_config.get("base_url", os.getenv("IMAGE_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"))
+
+    @property
+    def image_model(self) -> str:
+        return self.image_config.get("model", os.getenv("IMAGE_MODEL", "cogview-3-flash"))
+
+    @property
+    def image_size(self) -> str:
+        return self.image_config.get("size", "1024x1024")
+
+    @property
+    def image_quality(self) -> str:
+        return self.image_config.get("quality", "standard")
+
     # Server
     port: int = int(os.getenv("PORT", "8767"))
     database_path: str = os.getenv("DATABASE_PATH", "./backend/data/storycanvas.db")
@@ -151,6 +183,8 @@ class Settings:
         return {
             "provider": self.llm_provider,
             "configs": self._llm_settings.get("configs", {}),
+            "image_provider": self.image_provider,
+            "image_configs": self._llm_settings.get("image_configs", {}),
         }
 
     def update_settings(self, new_settings: dict):

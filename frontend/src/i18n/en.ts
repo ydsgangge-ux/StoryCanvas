@@ -856,11 +856,26 @@ const en: Record<string, string> = {
 
   'field.visual_style': 'Visual Style',
   'field.music_suggestion': 'Music Suggestion',
+  'field.camera_angle': 'Camera Angle',
+  'field.camera_movement': 'Camera Movement',
+  'field.music_note': 'Music Note',
   'field.estimated_duration': 'Estimated Duration',
   'field.total_shots': 'Total Shots',
   'field.shots_list': 'Shots List',
 
   'block.STORYBOARD': 'Storyboard',
+
+  'image.settings_title': 'Image Generation Settings',
+  'image.select_provider': 'Select Image Generation Service',
+  'image.size': 'Image Size',
+  'image.quality': 'Image Quality',
+  'image.generate_for_shot': 'Generate image for this shot',
+  'image.generate_failed': 'Image generation failed',
+  'image.generate_error': 'Image generation error',
+  'image.click_to_enlarge': 'Click to view full size',
+  'image.input_zhipu_key': 'Enter ZhipuAI API Key (open.bigmodel.cn)',
+  'image.input_siliconflow_key': 'Enter SiliconFlow API Key (siliconflow.cn)',
+  'image.input_tongyi_key': 'Enter Alibaba Cloud API Key (dashscope)',
 
   'welcome_desc': 'A free-canvas narrative creation system. Place, connect, and organize narrative elements on the canvas. AI transforms your structure into high-quality prose.',
   'lang.switch_to_en': 'English',

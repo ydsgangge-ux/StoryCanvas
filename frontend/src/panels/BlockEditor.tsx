@@ -300,6 +300,8 @@ const BlockEditor: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiHint, setAiHint] = useState('');
+  const [generatingImageIdx, setGeneratingImageIdx] = useState<number | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedBlock) {
@@ -426,7 +428,7 @@ const BlockEditor: React.FC = () => {
               <div style={{ fontSize: 12, fontWeight: 700, color: '#FF6347', marginBottom: 6 }}>
                 🎬 {t('field.shots_list')} ({localContent.shots.length})
               </div>
-              <div style={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ maxHeight: 500, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {localContent.shots.map((shot: any, idx: number) => (
                   <div key={idx} style={{
                     padding: '8px 10px', borderRadius: 6,
@@ -437,13 +439,92 @@ const BlockEditor: React.FC = () => {
                       <span style={{ fontWeight: 700, color: '#FF6347' }}>
                         #{shot.shot_number || idx + 1}
                       </span>
-                      <span style={{
-                        fontSize: 10, padding: '1px 6px', borderRadius: 3,
-                        background: 'rgba(255,99,71,0.15)', color: '#FF6347',
-                      }}>
-                        {shot.shot_size || ''}
-                      </span>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        {/* 景别 */}
+                        {shot.shot_size && (
+                          <span style={{
+                            fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                            background: 'rgba(255,99,71,0.15)', color: '#FF6347',
+                          }}>
+                            {shot.shot_size}
+                          </span>
+                        )}
+                        {/* 机位角度 */}
+                        {shot.camera_angle && (
+                          <span style={{
+                            fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                            background: 'rgba(52,152,219,0.15)', color: '#3498DB',
+                          }} title={t('field.camera_angle')}>
+                            📐 {shot.camera_angle}
+                          </span>
+                        )}
+                        {/* 运镜方式 */}
+                        {shot.camera_movement && (
+                          <span style={{
+                            fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                            background: 'rgba(26,188,156,0.15)', color: '#1ABC9C',
+                          }} title={t('field.camera_movement')}>
+                            🎥 {shot.camera_movement}
+                          </span>
+                        )}
+                        <button
+                          className="btn btn-sm"
+                          onClick={async () => {
+                            setGeneratingImageIdx(idx);
+                            try {
+                              const desc = shot.description || shot.notes || '';
+                              const res = await fetch(`/api/projects/${currentProject.id}/generate/image`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  prompt: desc,
+                                  shot_index: idx,
+                                  block_id: selectedBlock.id,
+                                }),
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                const updated = { ...localContent };
+                                updated.shots = [...updated.shots];
+                                updated.shots[idx] = { ...updated.shots[idx], image: data.image_path };
+                                setLocalContent(updated);
+                                await updateBlock(currentProject.id, selectedBlock.id, { content: updated });
+                              } else {
+                                const err = await res.json();
+                                alert(err.detail || t('image.generate_failed'));
+                              }
+                            } catch (e: any) {
+                              alert(t('image.generate_error') + ': ' + e.message);
+                            }
+                            setGeneratingImageIdx(null);
+                          }}
+                          disabled={generatingImageIdx === idx}
+                          style={{
+                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                            background: 'linear-gradient(135deg, #9B59B6, #8E44AD)',
+                            color: '#fff', border: 'none', cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={t('image.generate_for_shot')}
+                        >
+                          {generatingImageIdx === idx ? <><span className="loading-spinner" style={{ width: 10, height: 10 }} /> ...</> : '🎨'}
+                        </button>
+                      </div>
                     </div>
+                    {/* 图片预览 */}
+                    {shot.image && (
+                      <div
+                        style={{ marginBottom: 4, cursor: 'pointer', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border-color)' }}
+                        onClick={() => setLightboxImage(shot.image)}
+                        title={t('image.click_to_enlarge')}
+                      >
+                        <img
+                          src={shot.image}
+                          alt={`Shot ${shot.shot_number || idx + 1}`}
+                          style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
+                        />
+                      </div>
+                    )}
                     {shot.description && (
                       <div style={{ color: '#ddd', marginBottom: 3 }}>{shot.description}</div>
                     )}
@@ -468,6 +549,11 @@ const BlockEditor: React.FC = () => {
                           ➡ {shot.transition}
                         </span>
                       )}
+                      {shot.music_note && (
+                        <span style={{ background: 'rgba(231,76,60,0.15)', color: '#E74C3C', padding: '1px 5px', borderRadius: 3 }}>
+                          🎵 {shot.music_note}
+                        </span>
+                      )}
                     </div>
                     {shot.notes && (
                       <div style={{ fontSize: 10, color: '#999', marginTop: 3, fontStyle: 'italic' }}>
@@ -477,6 +563,30 @@ const BlockEditor: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* 大图弹窗 */}
+          {lightboxImage && (
+            <div
+              style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.85)', zIndex: 9999,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              onClick={() => setLightboxImage(null)}
+            >
+              <img
+                src={lightboxImage}
+                alt="Full size"
+                style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, boxShadow: '0 0 40px rgba(0,0,0,0.5)' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div style={{
+                position: 'absolute', top: 20, right: 30,
+                fontSize: 28, color: '#fff', cursor: 'pointer',
+              }} onClick={() => setLightboxImage(null)}>✕</div>
             </div>
           )}
 
