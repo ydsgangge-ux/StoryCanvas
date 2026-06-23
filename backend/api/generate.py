@@ -760,7 +760,13 @@ def _format_timelines(timelines: list) -> str:
 
 @router.post("/api/projects/{project_id}/generate/storyboard/{chapter_num}")
 async def generate_storyboard(project_id: str, chapter_num: int):
-    """将章节正文转化为分镜头脚本，自动创建 STORYBOARD 块"""
+    """将章节正文转化为分镜头脚本，自动创建 STORYBOARD 块。
+    优化策略：
+    1. 优先使用 strict tool calling（DeepSeek/OpenAI/中转站支持），格式合规性由服务端强制校验
+    2. 按场景边界分段生成（避免长章节注意力衰减）
+    3. 反重复约束（避免机位/运镜单一）
+    4. 不支持 tool calling 的 provider 自动 fallback 到纯文本 JSON
+    """
     conn = get_connection()
     project = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
     if not project:
@@ -788,44 +794,101 @@ async def generate_storyboard(project_id: str, chapter_num: int):
     conn.close()
 
     llm = create_llm()
-    system_prompt = """你是一位资深影视分镜头脚本编剧。你的任务是将小说正文转化为专业的、可直接指导实拍的分镜头脚本。
 
-输出严格的JSON格式，包含以下字段：
-{
-  "chapter_number": 章节号(数字),
-  "title": "章节标题",
-  "shots": [
-    {
-      "shot_number": 镜头编号(从1开始),
-      "shot_size": "景别(远景/全景/中景/近景/特写/大特写)",
-      "camera_angle": "机位角度(平视/俯拍/仰拍/鸟瞰/倾斜/主观视角/过肩)",
-      "camera_movement": "运镜方式(固定/推镜头/拉镜头/摇镜头/移镜头/跟拍/升降/环绕/手持晃动)",
-      "description": "画面描述(观众看到什么，要具体、可视化，结合机位和运镜描述构图)",
-      "audio": "声音设计(环境音/音效/现场声)",
-      "dialogue": "对白(如有，含角色名)",
-      "duration": "预估时长(如3秒/5秒/10秒)",
-      "transition": "转场方式(切至/淡入/淡出/叠化/划变/闪白)",
-      "music_note": "配乐情绪备注(该镜头的情绪基调、乐器暗示、节奏变化，如'低沉大提琴铺垫紧张感')",
-      "notes": "备注(特效/灯光/表演指导/剪辑重点)"
+    # 按场景边界切分章节正文
+    scene_segments = _split_chapter_into_scenes(chapter_content, max_chars=1500)
+    print(f"[STORYBOARD] 章节{chapter_num} 切分为 {len(scene_segments)} 个场景段落")
+
+    # strict tool calling schema
+    storyboard_tool = {
+        "type": "function",
+        "function": {
+            "name": "submit_storyboard_shots",
+            "strict": True,
+            "description": "提交一段叙事文本对应的分镜头列表",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "shots": {
+                        "type": "array",
+                        "description": "镜头列表",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "shot_size": {
+                                    "type": "string",
+                                    "enum": ["远景", "全景", "中景", "近景", "特写", "大特写"]
+                                },
+                                "camera_angle": {
+                                    "type": "string",
+                                    "enum": ["平视", "仰视", "俯视", "鸟瞰", "倾斜", "主观视角", "过肩"]
+                                },
+                                "camera_movement": {
+                                    "type": "string",
+                                    "enum": ["固定", "推", "拉", "摇", "移", "跟", "升降", "环绕", "手持晃动"]
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "画面描述：观众看到什么，结合机位和运镜描述构图效果"
+                                },
+                                "dialogue": {
+                                    "type": "string",
+                                    "description": "对白，含角色名；无对白则填空字符串"
+                                },
+                                "audio": {
+                                    "type": "string",
+                                    "description": "声音设计：环境音/音效/现场声"
+                                },
+                                "music_note": {
+                                    "type": "string",
+                                    "description": "该镜头的配乐情绪线索，如'低沉大提琴铺垫紧张感'"
+                                },
+                                "duration_seconds": {
+                                    "type": "integer",
+                                    "description": "预估时长（秒），3-30之间"
+                                },
+                                "transition": {
+                                    "type": "string",
+                                    "enum": ["切", "淡入", "淡出", "叠化", "划变", "闪白", "闪黑"]
+                                },
+                                "narrative_purpose": {
+                                    "type": "string",
+                                    "description": "该镜头的叙事目的，如'建立环境'、'强调情绪'、'揭示信息'"
+                                }
+                            },
+                            "required": ["shot_size", "camera_angle", "camera_movement", "description",
+                                         "dialogue", "audio", "music_note", "duration_seconds",
+                                         "transition", "narrative_purpose"],
+                            "additionalProperties": False
+                        }
+                    }
+                },
+                "required": ["shots"],
+                "additionalProperties": False
+            }
+        }
     }
-  ],
-  "total_shots": 镜头总数,
-  "estimated_duration": "预估总时长(如3分钟/5分钟)",
-  "visual_style": "视觉风格描述(如冷色调、高对比、暖黄光、胶片颗粒感)",
-  "music_suggestion": "整体配乐建议"
-}
 
-要求：
-1. 每个场景切换必须拆分为新镜头
-2. 景别要有变化，不能全是中景；景别选择要有叙事目的（建立环境用全景，强调情绪用特写）
-3. 机位角度必须明确：平视是默认，但情绪强烈时要用俯拍（压迫感）或仰拍（崇高感），主观视角用于代入角色
-4. 运镜方式必须具体：固定=稳定观察，推=聚焦/紧张，拉=揭示/疏离，摇=扫视环境，移=横向跟随，跟拍=角色行动
+    system_prompt = """你是一位资深影视分镜头脚本编剧，曾参与多部院线电影的分镜设计。你的任务是将小说正文转化为专业的、可直接指导实拍的分镜头脚本。
+
+【核心要求】
+1. 每个场景切换必须拆分为新镜头；同一场景内的情绪/动作变化也要拆分
+2. 景别要有节奏变化：建立环境用远景/全景，强调情绪用特写/大特写，对话用中景/近景
+3. 机位角度有叙事含义：平视=客观，仰视=崇高/威慑，俯视=渺小/压迫，主观视角=代入角色
+4. 运镜方式要具体：固定=稳定观察，推=聚焦/紧张，拉=揭示/疏离，摇=扫视环境，移=横向跟随，跟拍=角色行动
 5. 画面描述要可视化、具体，结合机位和运镜描述构图效果（如"俯拍全景：李明在人群中显得渺小"）
-6. 对白要标注角色名
-7. 转场方式要合理，注意相邻镜头的景别松紧节奏
-8. 每个镜头的music_note要单独写出该镜头的情绪配乐线索（不是整体音乐建议）
-9. 镜头数量要充分覆盖章节内容，不要遗漏重要情节
-10. 直接输出JSON，不要加markdown标记"""
+6. 对白要标注角色名，无对白填空字符串
+7. 每个镜头的music_note要单独写出该镜头的情绪配乐线索（不是整体音乐建议）
+8. duration_seconds 在 3-30 之间，根据镜头复杂度合理估计
+
+【反重复约束（重要）】
+- 相邻两个镜头的 camera_movement 不能相同，除非是为了强调静止或对峙感
+- 相邻两个镜头的 shot_size 不能相同，除非是为了强调对峙或重复
+- 整个段落内 camera_angle 至少出现 2 种不同取值
+- 不要让所有镜头都用"固定"+"平视"，这是偷懒
+
+【输出方式】
+通过调用 submit_storyboard_shots 工具提交分镜头列表，不要输出任何文本。"""
 
     style_info = ""
     if style_sig:
@@ -839,54 +902,62 @@ async def generate_storyboard(project_id: str, chapter_num: int):
         if parts:
             style_info = f"\n\n作品风格信息: {'; '.join(parts)}"
 
-    user_prompt = f"请将以下小说正文转化为分镜头脚本：\n\n## {chapter_title}\n\n{chapter_content}{style_info}"
+    # 分段生成镜头
+    all_shots = []
+    prev_shot_size = None
+    prev_camera_movement = None
 
-    result = await llm.chat(system_prompt, user_prompt, temperature=0.6)
+    for idx, segment in enumerate(scene_segments):
+        segment_prompt = f"请将以下小说片段（第{idx + 1}/{len(scene_segments)}段）转化为分镜头脚本：\n\n## {chapter_title}（片段{idx + 1}）\n\n{segment}{style_info}"
+        if prev_shot_size or prev_camera_movement:
+            segment_prompt += f"\n\n【衔接约束】上一段最后一个镜头：景别={prev_shot_size or '未知'}，运镜={prev_camera_movement or '未知'}。本段第一个镜头的景别和运镜要与上一段不同。"
 
-    # 调试日志
-    print(f"[STORYBOARD] LLM返回长度: {len(result)}, 前500字符: {result[:500]}")
+        # 优先尝试 strict tool calling
+        tool_result = await llm.chat_with_tools(
+            system_prompt, segment_prompt,
+            tools=[storyboard_tool],
+            temperature=0.8  # 格式由 schema 兜底，temperature 可以调高换取内容多样性
+        )
 
-    result = result.strip()
-    # 清理 markdown 代码块标记
-    if result.startswith("```json"):
-        result = result[7:]
-    elif result.startswith("```"):
-        result = result[3:]
-    if result.endswith("```"):
-        result = result[:-3]
-    result = result.strip()
-
-    try:
-        storyboard_data = json.loads(result)
-    except json.JSONDecodeError:
-        # 尝试提取 JSON 对象
-        match = re.search(r'\{[\s\S]*\}', result)
-        if match:
-            try:
-                storyboard_data = json.loads(match.group())
-            except json.JSONDecodeError:
-                raise HTTPException(500, f"LLM输出无法解析为JSON，原始输出前200字符: {result[:200]}")
+        if tool_result and "shots" in tool_result and len(tool_result["shots"]) > 0:
+            shots = tool_result["shots"]
+            print(f"[STORYBOARD] 段落{idx + 1} tool calling 成功: {len(shots)} 个镜头")
         else:
-            raise HTTPException(500, f"LLM输出中未找到JSON，原始输出前200字符: {result[:200]}")
+            # fallback 到纯文本 JSON
+            print(f"[STORYBOARD] 段落{idx + 1} tool calling 失败，fallback 到纯文本")
+            shots = await _fallback_text_chat(llm, system_prompt, segment_prompt)
 
-    if "shots" not in storyboard_data:
-        storyboard_data["shots"] = []
-    if "chapter_number" not in storyboard_data:
-        storyboard_data["chapter_number"] = chapter_num
-    if "title" not in storyboard_data:
-        storyboard_data["title"] = chapter_title
+        # 给每个镜头补编号
+        for shot_idx, shot in enumerate(shots):
+            shot["shot_number"] = len(all_shots) + shot_idx + 1
 
-    # 检查 shots 是否为空，尝试从其他可能的字段名中提取
-    if len(storyboard_data["shots"]) == 0:
-        for alt_key in ["shot_list", "镜头列表", "shot_list", "scenes", "scene_list"]:
-            if alt_key in storyboard_data and isinstance(storyboard_data[alt_key], list):
-                print(f"[STORYBOARD] shots为空，从备用字段 '{alt_key}' 提取到 {len(storyboard_data[alt_key])} 个镜头")
-                storyboard_data["shots"] = storyboard_data[alt_key]
-                break
+        all_shots.extend(shots)
+        if shots:
+            last = shots[-1]
+            prev_shot_size = last.get("shot_size")
+            prev_camera_movement = last.get("camera_movement")
 
-    print(f"[STORYBOARD] 解析结果: shots数量={len(storyboard_data['shots'])}, 所有顶级键={list(storyboard_data.keys())}")
+    if not all_shots:
+        raise HTTPException(500, "分镜头生成失败：所有段落均未生成有效镜头，请检查 LLM 配置")
 
-    storyboard_data["total_shots"] = len(storyboard_data["shots"])
+    # 计算总时长
+    total_seconds = sum(s.get("duration_seconds", 0) for s in all_shots)
+    if total_seconds >= 60:
+        estimated_duration = f"{total_seconds // 60}分{total_seconds % 60}秒"
+    else:
+        estimated_duration = f"{total_seconds}秒"
+
+    storyboard_data = {
+        "chapter_number": chapter_num,
+        "title": chapter_title,
+        "shots": all_shots,
+        "total_shots": len(all_shots),
+        "estimated_duration": estimated_duration,
+        "visual_style": _infer_visual_style(style_sig),
+        "music_suggestion": _infer_music_suggestion(style_sig),
+    }
+
+    print(f"[STORYBOARD] 总计生成 {len(all_shots)} 个镜头，预估时长 {estimated_duration}")
 
     conn = get_connection()
     block_id = str(uuid.uuid4())
@@ -907,12 +978,117 @@ async def generate_storyboard(project_id: str, chapter_num: int):
     return {
         "block_id": block_id,
         "chapter_number": chapter_num,
-        "title": storyboard_data.get("title", chapter_title),
+        "title": storyboard_data["title"],
         "total_shots": storyboard_data["total_shots"],
-        "estimated_duration": storyboard_data.get("estimated_duration", ""),
-        "visual_style": storyboard_data.get("visual_style", ""),
-        "music_suggestion": storyboard_data.get("music_suggestion", ""),
+        "estimated_duration": storyboard_data["estimated_duration"],
+        "visual_style": storyboard_data["visual_style"],
+        "music_suggestion": storyboard_data["music_suggestion"],
     }
+
+
+def _split_chapter_into_scenes(content: str, max_chars: int = 1500) -> list:
+    """按场景边界切分章节正文。
+    优先按空行/换行符切分，保证每个段落是完整叙事单元。
+    """
+    if not content:
+        return []
+
+    # 按双换行（段落）切分
+    paragraphs = re.split(r'\n\s*\n', content.strip())
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+
+    if not paragraphs:
+        return [content]
+
+    segments = []
+    current_segment = ""
+    for para in paragraphs:
+        # 如果加上这段会超过 max_chars，且当前段已有内容，则切分
+        if current_segment and len(current_segment) + len(para) + 2 > max_chars:
+            segments.append(current_segment)
+            current_segment = para
+        else:
+            if current_segment:
+                current_segment += "\n\n" + para
+            else:
+                current_segment = para
+
+    if current_segment:
+        segments.append(current_segment)
+
+    # 如果某个段落本身超长（>max_chars*1.5），按句号再切
+    final_segments = []
+    for seg in segments:
+        if len(seg) > max_chars * 1.5:
+            # 按句号切分
+            sentences = re.split(r'(?<=[。！？!?])', seg)
+            sub_seg = ""
+            for s in sentences:
+                if sub_seg and len(sub_seg) + len(s) > max_chars:
+                    final_segments.append(sub_seg)
+                    sub_seg = s
+                else:
+                    sub_seg += s
+            if sub_seg:
+                final_segments.append(sub_seg)
+        else:
+            final_segments.append(seg)
+
+    return final_segments
+
+
+async def _fallback_text_chat(llm, system_prompt: str, user_prompt: str) -> list:
+    """纯文本 JSON fallback：当 provider 不支持 tool calling 时使用"""
+    fallback_prompt = system_prompt + "\n\n【输出格式】请直接输出JSON对象，不要加markdown标记，格式为：\n{\"shots\": [{\"shot_size\": \"...\", \"camera_angle\": \"...\", \"camera_movement\": \"...\", \"description\": \"...\", \"dialogue\": \"...\", \"audio\": \"...\", \"music_note\": \"...\", \"duration_seconds\": 5, \"transition\": \"...\", \"narrative_purpose\": \"...\"}]}"
+
+    result = await llm.chat(fallback_prompt, user_prompt, temperature=0.3)
+    result = result.strip()
+    if result.startswith("```json"):
+        result = result[7:]
+    elif result.startswith("```"):
+        result = result[3:]
+    if result.endswith("```"):
+        result = result[:-3]
+    result = result.strip()
+
+    try:
+        data = json.loads(result)
+        return data.get("shots", [])
+    except json.JSONDecodeError:
+        match = re.search(r'\{[\s\S]*\}', result)
+        if match:
+            try:
+                data = json.loads(match.group())
+                return data.get("shots", [])
+            except json.JSONDecodeError:
+                return []
+        return []
+
+
+def _infer_visual_style(style_sig: dict) -> str:
+    """根据风格签名推断视觉风格"""
+    tone = style_sig.get("tone", []) if style_sig else []
+    if isinstance(tone, str):
+        tone = [tone]
+    if not tone:
+        return "根据章节内容自行确定"
+    cold_keywords = ["冷峻", "压抑", "黑暗", "悬疑", "惊悚", "科幻"]
+    warm_keywords = ["温馨", "治愈", "温暖", "怀旧", "日常"]
+    if any(k in str(tone) for k in cold_keywords):
+        return "冷色调、高对比、低饱和度，强调氛围感"
+    if any(k in str(tone) for k in warm_keywords):
+        return "暖黄光、柔焦、胶片颗粒感，强调温度"
+    return "根据章节内容自行确定"
+
+
+def _infer_music_suggestion(style_sig: dict) -> str:
+    """根据风格签名推断整体配乐建议"""
+    tone = style_sig.get("tone", []) if style_sig else []
+    if isinstance(tone, str):
+        tone = [tone]
+    if not tone:
+        return "根据章节情绪曲线设计配乐，注意情绪转折点的音乐变化"
+    return f"配合基调({','.join(tone) if isinstance(tone, list) else tone})设计配乐情绪线，注意情绪转折点的音乐变化"
 
 
 def _format_characters(characters: list) -> str:

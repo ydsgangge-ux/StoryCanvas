@@ -1,4 +1,5 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any, Optional
+import json
 import httpx
 from backend.llm.base import BaseLLM
 
@@ -16,6 +17,53 @@ class OpenAICompatibleProvider(BaseLLM):
         async for chunk in self.chat_stream(system_prompt, user_prompt, temperature):
             full_text += chunk
         return full_text
+
+    async def chat_with_tools(self, system_prompt: str, user_prompt: str,
+                              tools: list, temperature: float = 0.8,
+                              tool_choice: Any = None) -> Optional[dict]:
+        """调用 OpenAI 兼容协议的 tool calling 接口。
+        返回第一个 tool_call 的 arguments（已解析为 dict）。
+        失败时返回 None，由调用方 fallback。
+        """
+        if not self.api_key or not self.model:
+            return None
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": temperature,
+            "stream": False,
+            "tools": tools,
+        }
+        if tool_choice is not None:
+            payload["tool_choice"] = tool_choice
+        else:
+            # 默认强制调用第一个工具
+            payload["tool_choice"] = {"type": "function", "function": {"name": tools[0]["function"]["name"]}}
+
+        try:
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                    json=payload
+                )
+                if response.status_code != 200:
+                    return None
+
+                data = response.json()
+                message = data["choices"][0]["message"]
+                tool_calls = message.get("tool_calls")
+                if not tool_calls:
+                    return None
+
+                args_str = tool_calls[0]["function"]["arguments"]
+                return json.loads(args_str)
+        except (httpx.HTTPError, json.JSONDecodeError, KeyError, IndexError):
+            return None
 
     async def chat_stream(self, system_prompt: str, user_prompt: str,
                           temperature: float = 0.8) -> AsyncGenerator[str, None]:

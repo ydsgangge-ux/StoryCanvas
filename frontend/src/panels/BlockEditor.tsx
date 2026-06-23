@@ -539,9 +539,9 @@ const BlockEditor: React.FC = () => {
                           🔊 {shot.audio}
                         </span>
                       )}
-                      {shot.duration && (
+                      {(shot.duration || shot.duration_seconds) && (
                         <span style={{ background: 'rgba(243,156,18,0.15)', color: '#F39C12', padding: '1px 5px', borderRadius: 3 }}>
-                          ⏱ {shot.duration}
+                          ⏱ {shot.duration || `${shot.duration_seconds}秒`}
                         </span>
                       )}
                       {shot.transition && (
@@ -554,8 +554,13 @@ const BlockEditor: React.FC = () => {
                           🎵 {shot.music_note}
                         </span>
                       )}
+                      {shot.narrative_purpose && (
+                        <span style={{ background: 'rgba(149,165,166,0.15)', color: '#7F8C8D', padding: '1px 5px', borderRadius: 3 }}>
+                          🎯 {shot.narrative_purpose}
+                        </span>
+                      )}
                     </div>
-                    {shot.notes && (
+                    {(shot.notes || shot.narrative_purpose) && !shot.narrative_purpose && (
                       <div style={{ fontSize: 10, color: '#999', marginTop: 3, fontStyle: 'italic' }}>
                         📝 {shot.notes}
                       </div>

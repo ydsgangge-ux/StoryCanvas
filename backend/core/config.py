@@ -47,7 +47,9 @@ class Settings:
 
     @property
     def deepseek_model(self) -> str:
-        return self.llm_config.get("model", os.getenv("DEEPSEEK_MODEL", "deepseek-chat"))
+        # 注意：deepseek-chat 和 deepseek-reasoner 别名将于 2026-07-24 停用，
+        # 已迁移到 deepseek-v4-flash（非思考模式）。如需思考模式用 deepseek-v4-pro。
+        return self.llm_config.get("model", os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"))
 
     # OpenAI
     @property
@@ -169,8 +171,8 @@ class Settings:
 
     # Server
     port: int = int(os.getenv("PORT", "8767"))
-    database_path: str = os.getenv("DATABASE_PATH", "./backend/data/storycanvas.db")
-    story_cards_path: str = os.getenv("STORY_CARDS_PATH", "./backend/story_cards/cards.json")
+    database_path: str = os.getenv("DATABASE_PATH", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'storycanvas.db'))
+    story_cards_path: str = os.getenv("STORY_CARDS_PATH", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'story_cards', 'cards.json'))
 
     # Generation
     default_temperature: float = float(os.getenv("DEFAULT_TEMPERATURE", "0.8"))
