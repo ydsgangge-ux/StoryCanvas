@@ -69,10 +69,38 @@ def create_llm() -> BaseLLM:
             model=settings.openai_model,
             base_url=settings.openai_base_url
         )
+    elif provider == "mimo":
+        from backend.llm.openai_compat import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            api_key=settings.mimo_api_key,
+            model=settings.mimo_model,
+            base_url="https://api.xiaomimimo.com/v1"
+        )
+    elif provider == "glm":
+        from backend.llm.openai_compat import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            api_key=settings.glm_api_key,
+            model=settings.glm_model,
+            base_url="https://open.bigmodel.cn/api/paas/v4"
+        )
+    elif provider == "hunyuan":
+        from backend.llm.openai_compat import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            api_key=settings.hunyuan_api_key,
+            model=settings.hunyuan_model,
+            base_url=settings.hunyuan_base_url
+        )
+    elif provider == "qwen":
+        from backend.llm.openai_compat import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            api_key=settings.qwen_api_key,
+            model=settings.qwen_model,
+            base_url=settings.qwen_base_url
+        )
     else:  # deepseek (default)
         from backend.llm.openai_compat import OpenAICompatibleProvider
         return OpenAICompatibleProvider(
             api_key=settings.deepseek_api_key,
             model=settings.deepseek_model,
-            base_url="https://api.deepseek.com/v1"
+            base_url=settings.deepseek_base_url
         )

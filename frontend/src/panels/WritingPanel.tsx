@@ -47,7 +47,7 @@ const TONE_OPTION_KEYS = ['tone.austere_restrained', 'tone.moral_gray', 'tone.pa
 const WritingPanel: React.FC = () => {
   const { t } = useT();
   const { currentProject, loadProject } = useProjectStore();
-  const { showToast } = useUIStore();
+  const { showToast, language } = useUIStore();
 
   const [outlineBlocks, setOutlineBlocks] = useState<OutlineBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -156,7 +156,8 @@ const WritingPanel: React.FC = () => {
       currentProject.id, chapterNum, additionalInstructions,
       (text) => setOutput((prev) => prev + text),
       () => { setStage(null); setIsGenerating(false); showToast(t('writing.outline_complete')); loadProject(currentProject.id); },
-      (err) => { setStage(null); setIsGenerating(false); showToast(err, 'error'); }
+      (err) => { setStage(null); setIsGenerating(false); showToast(err, 'error'); },
+      language
     );
   };
 
@@ -178,7 +179,8 @@ const WritingPanel: React.FC = () => {
       },
       (err) => { setStage(null); setIsGenerating(false); showToast(err, 'error'); },
       (violations) => showToast(t('writing.info_boundary_warning', { count: violations.length }), 'warning'),
-      detailBlock
+      detailBlock,
+      language
     );
   };
 
@@ -288,7 +290,7 @@ const WritingPanel: React.FC = () => {
         }
       }
 
-      const body: any = { chapter_num: chapterNum, instruction: rewriteInstruction || t('writing.rewrite_placeholder') };
+      const body: any = { chapter_num: chapterNum, instruction: rewriteInstruction || t('writing.rewrite_placeholder'), language };
       if (selectedText) {
         body.selected_text = selectedText;
         body.context_before = contextBefore;

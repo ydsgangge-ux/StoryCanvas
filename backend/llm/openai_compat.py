@@ -103,8 +103,11 @@ class OpenAICompatibleProvider(BaseLLM):
                         try:
                             chunk = json.loads(data)
                             delta = chunk["choices"][0].get("delta", {})
-                            if "content" in delta:
-                                yield delta["content"]
+                            content = delta.get("content")
+                            # 部分模型（尤其是推理模型 thinking 阶段）会返回 content=None，
+                            # 不能把 None 抛给上层累加（否则 chat() 里 full_text += chunk 会崩溃）
+                            if content:
+                                yield content
                         except (json.JSONDecodeError, KeyError):
                             continue
 

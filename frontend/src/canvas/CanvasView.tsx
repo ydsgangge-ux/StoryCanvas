@@ -38,7 +38,7 @@ const CanvasView: React.FC = () => {
   const { t } = useT();
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedBlock, syncFromBlocks, saveDirtyPositions } = useCanvasStore();
   const { currentProject, blocks, connections, progress } = useProjectStore();
-  const { showToast, setShowBlockEditor, setShowWritingPanel } = useUIStore();
+  const { showToast, setShowBlockEditor, setShowWritingPanel, language } = useUIStore();
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null);
@@ -326,7 +326,7 @@ const CanvasView: React.FC = () => {
                     const res = await fetch(`/api/projects/${currentProject.id}/generate/block-content`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ block_id: blockId, field: 'all', hint }),
+                      body: JSON.stringify({ block_id: blockId, field: 'all', hint, language }),
                     });
                     if (res.ok) {
                       const data = await res.json();

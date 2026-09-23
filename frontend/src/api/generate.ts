@@ -4,12 +4,13 @@ export async function generateOutline(
   additionalInstructions: string = '',
   onChunk: (text: string) => void,
   onDone: (outline: string) => void,
-  onError: (msg: string) => void
+  onError: (msg: string) => void,
+  language: string = 'zh'
 ): Promise<void> {
   const response = await fetch(`/api/projects/${projectId}/generate/chapter-outline`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chapter_num: chapterNum, additional_instructions: additionalInstructions }),
+    body: JSON.stringify({ chapter_num: chapterNum, additional_instructions: additionalInstructions, language }),
   });
 
   if (!response.ok) {
@@ -71,12 +72,13 @@ export async function generateChapterContent(
   onDone: (result: any) => void,
   onError: (msg: string) => void,
   onWarning: (violations: any[]) => void,
-  blockId?: string  // 可选：指定 CHAPTER_DETAIL 块ID作为写作来源
+  blockId?: string,  // 可选：指定 CHAPTER_DETAIL 块ID作为写作来源
+  language: string = 'zh'
 ): Promise<void> {
   const response = await fetch(`/api/projects/${projectId}/generate/chapter-content`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chapter_num: chapterNum, outline_confirmed: outlineConfirmed, block_id: blockId }),
+    body: JSON.stringify({ chapter_num: chapterNum, outline_confirmed: outlineConfirmed, block_id: blockId, language }),
   });
 
   if (!response.ok) {

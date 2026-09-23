@@ -18,6 +18,50 @@ router = APIRouter()
 aggregator = ContextAggregator()
 
 
+def _with_output_language(system_prompt: str, language: str) -> str:
+    """按输出语言附加说明。仅当 language='en' 时追加英文输出要求，中文保持原样。"""
+    if language == "en":
+        return system_prompt + "\n请始终使用英文输出全部内容。\nAlways respond entirely in English."
+    return system_prompt
+
+
+def _clean_trailing_commas(s: str) -> str:
+    """移除 JSON 字符串中逗号后面紧跟 } 或 ] 的尾部逗号（脏 JSON 常见错误）。
+    例如 {"a": "1",} -> {"a": "1"}。"""
+    return re.sub(r',\s*([}\]])', r'\1', s)
+
+
+def _parse_llm_json(result: str, fields: dict) -> dict:
+    """健壮地解析 LLM 输出的 JSON。逐级降级，最后一定返回 dict 而非抛异常。"""
+    candidates = []
+    if result:
+        candidates.append(result)
+    match = re.search(r'\{.*\}', result, re.DOTALL)
+    if match:
+        candidates.append(match.group())
+    # 去掉首尾括号分别尝试（防止开头有多余说明文字）
+    for cand in list(candidates):
+        cand = cand.strip()
+        if cand.startswith("{"):
+            candidates.append(cand.split("}", 1)[0] + "}")
+        if cand.endswith("}"):
+            candidates.append("{" + cand.rsplit("{", 1)[1])
+    for cand in candidates:
+        for variant in (cand, _clean_trailing_commas(cand)):
+            variant = variant.strip()
+            if not variant:
+                continue
+            try:
+                parsed = json.loads(variant)
+                if isinstance(parsed, dict):
+                    return parsed
+            except json.JSONDecodeError:
+                continue
+    # 全部失败：把整段文字塞给第一个字段，保证接口不崩溃
+    first = list(fields.keys())[0] if fields else "content"
+    return {first: (result or "")[:200]}
+
+
 @router.get("/api/projects/{project_id}/debug/context/{chapter_num}")
 def debug_context(project_id: str, chapter_num: int):
     """诊断：查看聚合器产出的上下文，检查哪些数据传进去了"""
@@ -149,7 +193,7 @@ async def generate_outline(project_id: str, req: GenerateOutlineRequest):
         llm = create_llm()
         outline_text = ""
         async for chunk in llm.chat_stream(
-            "你是一个专业的叙事策划师，擅长生成详细的章节细纲。",
+            _with_output_language("你是一个专业的叙事策划师，擅长生成详细的章节细纲。", req.language),
             prompt,
             temperature=0.7
         ):
@@ -258,7 +302,7 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
         # ② 写手
         chapter_content = ""
         try:
-            async for chunk in writer_stream(blueprint, ctx):
+            async for chunk in writer_stream(blueprint, ctx, language=req.language):
                 chapter_content += chunk
                 yield {"data": json.dumps({"event": "chunk", "data": {"stage": "writing", "text": chunk}})}
         except Exception as e:
@@ -294,7 +338,7 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
             yield {"data": json.dumps({"event": "stage", "data": {"stage": "revising", "msg": "修订者修复中..."}})}
             for attempt in range(settings.max_retries):
                 try:
-                    revised = await revisor_run(final_content, audit.get("result", ""), ctx)
+                    revised = await revisor_run(final_content, audit.get("result", ""), ctx, language=req.language)
                     final_content = extract_content(revised)
                     re_audit = await auditor_run(final_content, ctx)
                     if re_audit.get("passed", True):
@@ -394,6 +438,8 @@ async def rewrite_content(project_id: str, req: RewriteContentRequest):
     else:
         prompt_parts.append("请直接输出修改后的完整正文内容，不要加解释或标记。只修改需要修改的部分，保持其余内容不变。")
 
+    system_prompt = _with_output_language(system_prompt, req.language)
+
     llm = create_llm()
     result = await llm.chat(system_prompt, "\n\n".join(prompt_parts), temperature=0.6)
 
@@ -438,8 +484,8 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
     fields_to_generate = {k: v for k, v in rules.items() if not existing_content.get(k)}
 
     llm = create_llm()
-    system_prompt = f"""你是一位资深叙事设计师。根据已有信息和关联块，为{block_type}类型块生成内容。
-直接输出JSON对象，不要解释，不要加markdown标记。JSON键名必须严格匹配指定字段。"""
+    system_prompt = _with_output_language(f"""你是一位资深叙事设计师。根据已有信息和关联块，为{block_type}类型块生成内容。
+直接输出JSON对象，不要解释，不要加markdown标记。JSON键名必须严格匹配指定字段。""", req.language)
 
     user_prompt_parts = [
         f"## 目标块类型: {block_type}",
@@ -466,11 +512,7 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
     try:
         generated = json.loads(result)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', result, re.DOTALL)
-        if match:
-            generated = json.loads(match.group())
-        else:
-            generated = {list(fields_to_generate.keys())[0]: result[:200]}
+        generated = _parse_llm_json(result, fields_to_generate)
 
     # 合并到已有内容
     merged = {**existing_content, **generated}

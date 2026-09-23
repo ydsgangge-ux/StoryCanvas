@@ -10,12 +10,19 @@ WRITER_SYSTEM_PROMPT = """你是一位专业小说写手。根据写作蓝图生
 3. 情绪曲线符合设计
 4. 自然回收伏笔
 5. 不要直接说教或暴露主题
-6. 写好每章后的结算表，记录角色位置/情感/关系的变化"""
+6. 写好每章后的结算表，记录角色位置/情感/关系的变化
+{output_language}"""
 
 
-async def stream(blueprint: str, ctx: dict) -> AsyncGenerator[str, None]:
+async def stream(blueprint: str, ctx: dict, language: str = "zh") -> AsyncGenerator[str, None]:
     """流式生成正文"""
     llm = create_llm()
+
+    # 语言指令：仅 en 时附加英文输出要求，中文保持不变
+    _lang_hint = ""
+    if language == "en":
+        _lang_hint = "请始终使用英文输出全部内容。\nAlways respond entirely in English."
+    system_prompt = WRITER_SYSTEM_PROMPT.format(output_language=_lang_hint)
 
     # Build writing prompt from blueprint
     user_prompt = f"""
@@ -43,7 +50,7 @@ async def stream(blueprint: str, ctx: dict) -> AsyncGenerator[str, None]:
 下一章提示：
 ```
 """
-    async for chunk in llm.chat_stream(WRITER_SYSTEM_PROMPT, user_prompt, temperature=0.8):
+    async for chunk in llm.chat_stream(system_prompt, user_prompt, temperature=0.8):
         yield chunk
 
 

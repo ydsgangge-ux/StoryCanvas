@@ -345,6 +345,7 @@ def get_settings():
         "claude": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
                    "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
         "gemini": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.0-pro"],
+        "qwen": ["qwen3.8-flash", "qwen3.8-max"],
         "ollama": ["llama3.1", "llama3.2", "qwen2.5", "mistral", "mixtral", "gemma2", "deepseek-r1"],
     }
     return masked

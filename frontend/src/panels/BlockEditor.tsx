@@ -294,6 +294,7 @@ const FIELD_GROUPS: Record<string, { key: string; labelKey: string; type: 'text'
 
 const BlockEditor: React.FC = () => {
   const { t } = useT();
+  const { language } = useUIStore();
   const { selectedBlock } = useCanvasStore();
   const { currentProject, updateBlock } = useProjectStore();
   const [localContent, setLocalContent] = useState<Record<string, any>>({});
@@ -629,7 +630,7 @@ const BlockEditor: React.FC = () => {
                   const res = await fetch(`/api/projects/${currentProject.id}/generate/block-content`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ block_id: selectedBlock.id, field: 'all', hint: aiHint }),
+                    body: JSON.stringify({ block_id: selectedBlock.id, field: 'all', hint: aiHint, language }),
                   });
                   if (res.ok) {
                     const data = await res.json();

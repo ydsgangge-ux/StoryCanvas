@@ -97,6 +97,7 @@ class CanvasLayoutUpdate(BaseModel):
 class GenerateOutlineRequest(BaseModel):
     chapter_num: int
     additional_instructions: str = ""
+    language: str = "zh"  # 生成输出语言：zh / en
 
 
 class GenerateContentRequest(BaseModel):
@@ -105,12 +106,14 @@ class GenerateContentRequest(BaseModel):
     block_id: Optional[str] = None  # 指定使用的 CHAPTER_DETAIL 块ID
     save_only: Optional[bool] = False  # 仅保存正文，不运行管线
     content: Optional[str] = None  # save_only=True 时要保存的正文字
+    language: str = "zh"  # 生成输出语言：zh / en
 
 
 class GenerateBlockContentRequest(BaseModel):
     block_id: str
     field: str
     hint: str = ""
+    language: str = "zh"  # 生成输出语言：zh / en
 
 class RewriteContentRequest(BaseModel):
     chapter_num: int
@@ -119,6 +122,7 @@ class RewriteContentRequest(BaseModel):
     issue: Optional[str] = None
     context_before: Optional[str] = None
     context_after: Optional[str] = None
+    language: str = "zh"  # 生成输出语言：zh / en
 
 
 class ApplyStoryCardsRequest(BaseModel):

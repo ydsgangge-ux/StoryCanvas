@@ -49,7 +49,11 @@ class Settings:
     def deepseek_model(self) -> str:
         # 注意：deepseek-chat 和 deepseek-reasoner 别名将于 2026-07-24 停用，
         # 已迁移到 deepseek-v4-flash（非思考模式）。如需思考模式用 deepseek-v4-pro。
-        return self.llm_config.get("model", os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"))
+        return self.llm_config.get("model", os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro"))
+
+    @property
+    def deepseek_base_url(self) -> str:
+        return self.llm_config.get("base_url", os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"))
 
     # OpenAI
     @property
@@ -93,6 +97,59 @@ class Settings:
     def gemini_model(self) -> str:
         cfg = self._llm_settings.get("configs", {}).get("gemini", {})
         return cfg.get("model", os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
+
+    # MiMo (Xiaomi)
+    @property
+    def mimo_api_key(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("mimo", {})
+        return cfg.get("api_key", os.getenv("MIMO_API_KEY", ""))
+
+    @property
+    def mimo_model(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("mimo", {})
+        return cfg.get("model", os.getenv("MIMO_MODEL", "mimo-v2.6-pro"))
+
+    # GLM (Zhipu)
+    @property
+    def glm_api_key(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("glm", {})
+        return cfg.get("api_key", os.getenv("GLM_API_KEY", ""))
+
+    @property
+    def glm_model(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("glm", {})
+        return cfg.get("model", os.getenv("GLM_MODEL", "glm-5.3"))
+
+    # 腾讯混元 (Hunyuan)
+    @property
+    def hunyuan_api_key(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("hunyuan", {})
+        return cfg.get("api_key", os.getenv("HUNYUAN_API_KEY", ""))
+
+    @property
+    def hunyuan_model(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("hunyuan", {})
+        return cfg.get("model", os.getenv("HUNYUAN_MODEL", "hy4-preview"))
+
+    @property
+    def hunyuan_base_url(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("hunyuan", {})
+        return cfg.get("base_url", os.getenv("HUNYUAN_BASE_URL", "https://tokenhub.tencentmaas.com/v1"))
+
+    @property
+    def qwen_api_key(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("qwen", {})
+        return cfg.get("api_key", os.getenv("QWEN_API_KEY", ""))
+
+    @property
+    def qwen_model(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("qwen", {})
+        return cfg.get("model", os.getenv("QWEN_MODEL", "qwen3.8-flash"))
+
+    @property
+    def qwen_base_url(self) -> str:
+        cfg = self._llm_settings.get("configs", {}).get("qwen", {})
+        return cfg.get("base_url", os.getenv("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"))
 
     # Ollama
     @property
@@ -191,7 +248,22 @@ class Settings:
 
     def update_settings(self, new_settings: dict):
         """更新设置并保存"""
-        self._llm_settings.update(new_settings)
+        merged = dict(self._llm_settings)
+        # configs / image_configs 深合并，避免前端全量提交时用脱敏/空 key 覆盖真实 key
+        for config_key in ("configs", "image_configs"):
+            old_map = merged.get(config_key, {})
+            new_map = new_settings.get(config_key) or {}
+            for provider, cfg in new_map.items():
+                old_cfg = old_map.get(provider, {})
+                for field, value in cfg.items():
+                    # 前端会把后端脱敏值(如 sk-1234...abcd)原样写回，必须回退为旧值
+                    if field == "api_key" and isinstance(value, str) and "..." in value:
+                        cfg[field] = old_cfg.get("api_key", value)
+                    # 空 key 视为未修改，保留旧 key（避免误清空）
+                    elif field == "api_key" and not value and old_cfg.get("api_key"):
+                        cfg[field] = old_cfg["api_key"]
+        merged.update(new_settings)
+        self._llm_settings = merged
         save_llm_settings(self._llm_settings)
 
 

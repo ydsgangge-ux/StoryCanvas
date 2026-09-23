@@ -32,7 +32,7 @@ const App: React.FC = () => {
     showProjectList, showTrackingPanel, showBlockPool, showLLMSettings, activeTab,
     setShowStoryCardPicker, setShowBlockEditor, setShowWritingPanel,
     setShowProjectList, setShowTrackingPanel, setShowBlockPool, setShowLLMSettings, setActiveTab,
-    toastMessage, toastType, showToast,
+    toastMessage, toastType, showToast, language,
   } = useUIStore();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -131,7 +131,7 @@ const App: React.FC = () => {
           const res = await fetch(`/api/projects/${currentProject.id}/generate/block-content`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ block_id: blockId, field: 'all', hint: '' }),
+            body: JSON.stringify({ block_id: blockId, field: 'all', hint: '', language }),
           });
           if (res.ok) {
             const data = await res.json();

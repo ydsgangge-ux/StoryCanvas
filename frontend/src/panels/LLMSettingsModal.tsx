@@ -25,8 +25,8 @@ const PROVIDERS: ProviderConfig[] = [
     isLocal: false,
     fields: [
       { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
-      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['deepseek-chat', 'deepseek-reasoner'], editable: true },
-      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.deepseek.com/v1' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['deepseek-v4-pro', 'deepseek-flash'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.deepseek.com' },
     ],
   },
   {
@@ -56,6 +56,46 @@ const PROVIDERS: ProviderConfig[] = [
     fields: [
       { key: 'api_key', label: 'API Key', type: 'password', placeholder: t('llm.input_gemini_key') },
       { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.0-pro'], editable: true },
+    ],
+  },
+  {
+    label: 'MiMo (Xiaomi)',
+    value: 'mimo',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['mimo-v2.6-pro', 'mimo-v2.6-flash', 'mimo-v2.6-pro-ultraspeed'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://api.xiaomimimo.com/v1' },
+    ],
+  },
+  {
+    label: 'GLM (Zhipu)',
+    value: 'glm',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['glm-5.3', 'glm-5.3-flash', 'glm-5.3-flashx'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://open.bigmodel.cn/api/paas/v4' },
+    ],
+  },
+  {
+    label: '腾讯混元 (Hunyuan)',
+    value: 'hunyuan',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['hy4-preview', 'hy3'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://tokenhub.tencentmaas.com/v1' },
+    ],
+  },
+  {
+    label: '阿里千问 Qwen',
+    value: 'qwen',
+    isLocal: false,
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-...' },
+      { key: 'model', label: t('llm.model'), type: 'select', placeholder: t('llm.select_or_input_model'), options: ['qwen3.8-flash', 'qwen3.8-max'], editable: true },
+      { key: 'base_url', label: t('llm.api_url'), type: 'url', placeholder: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
     ],
   },
   {
