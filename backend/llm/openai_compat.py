@@ -67,12 +67,11 @@ class OpenAICompatibleProvider(BaseLLM):
 
     async def chat_stream(self, system_prompt: str, user_prompt: str,
                           temperature: float = 0.8) -> AsyncGenerator[str, None]:
+        # 直接抛异常，避免把错误提示当成正文内容返回给上层
         if not self.api_key:
-            yield f"[提示: 请设置 {self._provider_name()} 的 API Key]"
-            return
+            raise RuntimeError(f"未设置 {self._provider_name()} 的 API Key")
         if not self.model:
-            yield "[提示: 请设置模型名称]"
-            return
+            raise RuntimeError("未设置模型名称")
 
         async with httpx.AsyncClient(timeout=180.0) as client:
             async with client.stream(
@@ -91,8 +90,9 @@ class OpenAICompatibleProvider(BaseLLM):
             ) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    yield f"[API错误 {response.status_code}]: {error_text.decode('utf-8', errors='replace')[:200]}"
-                    return
+                    raise RuntimeError(
+                        f"[API错误 {response.status_code}]: {error_text.decode('utf-8', errors='replace')[:200]}"
+                    )
 
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):

@@ -212,23 +212,35 @@ def apply_story_cards(project_id: str, req: ApplyStoryCardsRequest):
             )
             created_blocks.append({"id": bid, "type": block_def["type"]})
 
+    # 所有卡的块创建完成后统一连线，避免跨卡引用时目标块尚未创建
+    existing_pairs = set()
+    for _, card in all_cards:
         for conn_def in card.get("auto_connections", []):
-            # Find blocks by type
             from_blocks = conn.execute(
-                "SELECT id FROM blocks WHERE project_id = ? AND type = ?", (project_id, conn_def["from_type"])
+                "SELECT id FROM blocks WHERE project_id = ? AND type = ? ORDER BY created_at, id",
+                (project_id, conn_def["from_type"])
             ).fetchall()
             to_blocks = conn.execute(
-                "SELECT id FROM blocks WHERE project_id = ? AND type = ?", (project_id, conn_def["to_type"])
+                "SELECT id FROM blocks WHERE project_id = ? AND type = ? ORDER BY created_at, id",
+                (project_id, conn_def["to_type"])
             ).fetchall()
-            if from_blocks and to_blocks:
-                cid = str(uuid.uuid4())
-                conn.execute(
-                    """INSERT INTO connections (id, project_id, from_block, to_block, conn_type, label)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
-                    (cid, project_id, from_blocks[0]["id"], to_blocks[0]["id"],
-                     conn_def["conn_type"], conn_def.get("label", ""))
-                )
-                created_connections.append({"id": cid})
+            if not from_blocks:
+                continue
+            from_id = from_blocks[0]["id"]
+            to_id = next((b["id"] for b in to_blocks if b["id"] != from_id), None)
+            if not to_id:
+                continue
+            pair = (from_id, to_id, conn_def["conn_type"])
+            if pair in existing_pairs:
+                continue
+            existing_pairs.add(pair)
+            cid = str(uuid.uuid4())
+            conn.execute(
+                """INSERT INTO connections (id, project_id, from_block, to_block, conn_type, label)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (cid, project_id, from_id, to_id, conn_def["conn_type"], conn_def.get("label", ""))
+            )
+            created_connections.append({"id": cid})
 
     # Update experience flags
     flags = json.loads(project["story_cards"] or "[]")

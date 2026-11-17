@@ -26,26 +26,76 @@ PROSE_STYLE_MAP = {
     "简洁明快": "文笔简洁明快，句子短促有力，节奏快，信息密度高，不写长句和复杂结构",
 }
 
+# 前端保存的是 i18n key（如 style.standard），这里统一映射回中文规范值
+STYLE_KEY_ALIASES = {
+    "style.standard": "标准文笔",
+    "style.ornate": "华丽辞藻",
+    "style.plain": "朴实白描",
+    "style.humorous": "幽默诙谐",
+    "style.austere": "冷峻犀利",
+    "style.poetic": "诗意浪漫",
+    "style.concise": "简洁明快",
+}
+
+POV_KEY_ALIASES = {
+    "pov.multi": "多视角轮换",
+    "pov.limited_third": "限制第三人称",
+    "pov.omniscient": "全知叙事",
+    "pov.first_person": "第一人称",
+    "pov.ensemble": "无焦点群像",
+}
+
+DENSITY_KEY_ALIASES = {
+    "density.epic": "厚重史诗",
+    "density.minimalist": "极简风格",
+    "density.standard": "标准叙事",
+    "density.stream": "意识流",
+    "density.prose_poetry": "诗化散文",
+}
+
+TONE_KEY_ALIASES = {
+    "tone.austere_restrained": "冷峻克制",
+    "tone.moral_gray": "道德灰度",
+    "tone.passionate": "热血燃向",
+}
+
+
+def _resolve_alias(value, aliases: dict):
+    """把 i18n key 还原为后端可识别的中文值"""
+    if isinstance(value, str) and value in aliases:
+        return aliases[value]
+    return value
+
+
+def _join_list(values) -> str:
+    """把可能是列表/字符串/字典列表的字段安全地拼成文本"""
+    if isinstance(values, str):
+        return values
+    if not isinstance(values, list):
+        return str(values or "")
+    return ", ".join(v if isinstance(v, str) else str(v) for v in values)
+
 
 def style_to_prompt(style_sig: dict) -> str:
     """将风格签名转化为AI写作指令"""
     if not style_sig:
         return ""
     parts = []
-    pov = style_sig.get("narrative_pov", "")
+    pov = _resolve_alias(style_sig.get("narrative_pov", ""), POV_KEY_ALIASES)
     if pov in POV_MAP:
         parts.append(POV_MAP[pov])
 
-    density = style_sig.get("language_density", "")
+    density = _resolve_alias(style_sig.get("language_density", ""), DENSITY_KEY_ALIASES)
     if density in DENSITY_MAP:
         parts.append(DENSITY_MAP[density])
 
-    prose = style_sig.get("prose_style", "")
+    prose = _resolve_alias(style_sig.get("prose_style", ""), STYLE_KEY_ALIASES)
     if prose in PROSE_STYLE_MAP:
         parts.append(PROSE_STYLE_MAP[prose])
 
     tone = style_sig.get("tone", [])
     if isinstance(tone, list):
+        tone = [_resolve_alias(x, TONE_KEY_ALIASES) for x in tone]
         if "冷峻克制" in tone:
             parts.append("不煽情，不用感叹号，情感通过行为和细节体现，不直接描述")
         if "道德灰度" in tone:
@@ -55,15 +105,23 @@ def style_to_prompt(style_sig: dict) -> str:
 
     ref_authors = style_sig.get("reference_authors", [])
     if ref_authors:
-        parts.append(f"风格参考作者: {', '.join(ref_authors)}")
+        parts.append(f"风格参考作者: {_join_list(ref_authors)}")
 
     avoid = style_sig.get("avoid_tropes", [])
     if avoid:
-        parts.append(f"明确避免的套路: {', '.join(avoid)}")
+        parts.append(f"明确避免的套路: {_join_list(avoid)}")
 
     custom = style_sig.get("custom_instructions", "")
     if custom:
         parts.append(custom)
+
+    # 旧数据/项目画像里的自由文本风格与禁用词
+    guide = style_sig.get("style_guide") or style_sig.get("writing_style")
+    if guide:
+        parts.append(guide)
+    forbidden = style_sig.get("forbidden_words")
+    if forbidden:
+        parts.append(f"禁用词/慎用表达: {_join_list(forbidden)}")
 
     return "\n".join(parts)
 
@@ -94,7 +152,7 @@ def block_to_context(block_dict: dict) -> str:
     elif btype == "WORLDVIEW":
         return (
             f"世界观: {content.get('world_name', '')}\n"
-            f"  核心规则: {', '.join(content.get('fundamental_rules', []))}\n"
+            f"  核心规则: {_join_list(content.get('fundamental_rules', []))}\n"
             f"  基调: {content.get('tone', '')}\n"
         )
     elif btype == "FACTION":

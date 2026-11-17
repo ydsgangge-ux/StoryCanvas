@@ -1,5 +1,37 @@
 """进度条计算 - 计算单个块完整度和项目整体进度"""
 
+# ─── AI 填充补充配置 ─────────────────────────────────────────
+# 编辑器里可填写、但未计入完整度权重的字段：AI 填充时也要补全，
+# 否则会出现「进度显示完整、卡片仍有大量空白」的情况
+EXTRA_AI_FIELDS = {
+    "CHARACTER": ["role_archetype", "superpower", "voice_style", "appearance", "age"],
+    "WORLDVIEW": ["cosmology"],
+    "SCENE": ["scene_type", "what_happens", "tension_level"],
+    "EVENT": ["event_type"],
+    "HOOK": ["hook_type"],
+    "RELATIONSHIP": ["intensity"],
+}
+
+# 由专门流程生成或仅用于 UI 分组的字段，不参与通用 AI 填充
+AI_FILL_EXCLUDED_FIELDS = {
+    "STORYBOARD": {"shots", "camera_angle", "camera_movement", "music_note"},
+    "STORY_OUTLINE": {"divider_acts", "divider_structure"},
+    "CHAPTER_OUTLINE": {"divider_beats"},
+    "CHAPTER_DETAIL": {"divider_scenes", "divider_other"},
+}
+
+# 结构化字段的期望格式：写进 prompt，避免模型只返回扁平字符串
+STRUCTURED_FIELD_HINTS = {
+    "fundamental_rules": '字符串数组，如 ["规则1", "规则2"]',
+    "confirmed_knowledge": '字符串数组，如 ["已知信息1", "已知信息2"]',
+    "wrongly_believes": '字符串数组，如 ["误信内容1"]',
+    "pov_characters": '字符串数组，如 ["角色A", "角色B"]',
+    "peak_points": '字符串数组，如 ["第3章：高潮点"]',
+    "valley_points": '字符串数组，如 ["第5章：低谷点"]',
+    "true_facts": '对象数组，如 [{"content": "真相内容", "reveal_chapter": 3}]',
+    "reader_reveal_plan": '对象数组，如 [{"chapter": 3, "reveal": "向读者揭示的内容", "never_reveal_to_characters": false}]',
+}
+
 COMPLETENESS_RULES = {
     # ─── 角色类（7种） ─────────────────────────────────────────
     "CHARACTER": {
@@ -272,7 +304,7 @@ COMPLETENESS_RULES = {
     "STORYBOARD": {
         "chapter_number": 0.03,
         "title": 0.03,
-        "shots": 0.30,
+        "shots": 0.40,
         "total_shots": 0.05,
         "estimated_duration": 0.05,
         "visual_style": 0.10,
@@ -305,7 +337,10 @@ def calculate_completeness(block_type: str, content: dict) -> float:
             # 镜头级字段：检查 shots 数组中该字段的填充率
             if field in shot_level_fields:
                 if shots and len(shots) > 0:
-                    filled_count = sum(1 for s in shots if s.get(field, "").strip())
+                    filled_count = sum(
+                        1 for s in shots
+                        if isinstance(s, dict) and str(s.get(field) or "").strip()
+                    )
                     fill_ratio = filled_count / len(shots)
                     total_weight += weight * fill_ratio
                 # shots 为空则该项得0分

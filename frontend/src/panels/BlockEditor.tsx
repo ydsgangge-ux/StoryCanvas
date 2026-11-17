@@ -94,6 +94,7 @@ const FIELD_GROUPS: Record<string, { key: string; labelKey: string; type: 'text'
   ],
   SCENE: [
     { key: 'title', labelKey: 'field.title', type: 'text' },
+    { key: 'chapter', labelKey: 'field.chapter', type: 'number' },
     { key: 'scene_goal', labelKey: 'field.scene_goal', type: 'textarea' },
     { key: 'emotion_target', labelKey: 'field.emotion_target', type: 'textarea' },
     { key: 'tension_level', labelKey: 'field.tension_level', type: 'number' },
@@ -294,7 +295,7 @@ const FIELD_GROUPS: Record<string, { key: string; labelKey: string; type: 'text'
 
 const BlockEditor: React.FC = () => {
   const { t } = useT();
-  const { language } = useUIStore();
+  const { language, showToast } = useUIStore();
   const { selectedBlock } = useCanvasStore();
   const { currentProject, updateBlock } = useProjectStore();
   const [localContent, setLocalContent] = useState<Record<string, any>>({});
@@ -331,9 +332,22 @@ const BlockEditor: React.FC = () => {
     setLocalContent(updated);
   };
 
+  /** 下拉字段展示值：历史数据可能存的是 option.xxx，统一转成文案 */
+  const resolveOptionValue = (raw: any) => {
+    if (typeof raw === 'string' && raw.startsWith('option.')) return t(raw);
+    return raw ?? '';
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    await updateBlock(currentProject.id, selectedBlock.id, { content: localContent });
+    // 保存前把残留的 option.xxx 转成实际文案，避免脏值写入内容
+    const normalized: Record<string, any> = { ...localContent };
+    for (const f of fields) {
+      if (f.type === 'select' && typeof normalized[f.key] === 'string' && normalized[f.key].startsWith('option.')) {
+        normalized[f.key] = t(normalized[f.key]);
+      }
+    }
+    await updateBlock(currentProject.id, selectedBlock.id, { content: normalized });
     setIsSaving(false);
   };
 
@@ -384,17 +398,25 @@ const BlockEditor: React.FC = () => {
                   onBlur={handleBlur}
                 />
               ) : field.type === 'select' ? (
-                <select
-                  className="form-input"
-                  value={localContent[field.key] ?? ''}
-                  onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                  onBlur={handleBlur}
-                >
-                  <option value="">-- {t('editor.select')} --</option>
-                  {(field.optionKeys || []).map((optKey) => (
-                    <option key={optKey} value={optKey}>{t(optKey)}</option>
-                  ))}
-                </select>
+                (() => {
+                  const currentValue = resolveOptionValue(localContent[field.key]);
+                  const optionTexts = (field.optionKeys || []).map((optKey) => t(optKey));
+                  const isLegacyValue = !!currentValue && !optionTexts.includes(currentValue);
+                  return (
+                    <select
+                      className="form-input"
+                      value={currentValue}
+                      onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                      onBlur={handleBlur}
+                    >
+                      <option value="">-- {t('editor.select')} --</option>
+                      {optionTexts.map((optText) => (
+                        <option key={optText} value={optText}>{optText}</option>
+                      ))}
+                      {isLegacyValue && <option value={currentValue}>{currentValue}</option>}
+                    </select>
+                  );
+                })()
               ) : field.type === 'textarea' ? (
                 <textarea
                   className="form-textarea"
@@ -634,10 +656,21 @@ const BlockEditor: React.FC = () => {
                   });
                   if (res.ok) {
                     const data = await res.json();
-                    setLocalContent(data.merged_content || {});
-                    await updateBlock(currentProject.id, selectedBlock.id, { content: data.merged_content });
+                    const generatedCount = Object.keys(data.generated_fields || {}).length;
+                    if (generatedCount === 0) {
+                      showToast(data.message || t('app.ai_fill_complete', { count: 0 }));
+                    } else {
+                      setLocalContent(data.merged_content || {});
+                      await updateBlock(currentProject.id, selectedBlock.id, { content: data.merged_content });
+                      showToast(t('app.ai_fill_complete', { count: generatedCount }));
+                    }
+                  } else {
+                    const err = await res.json().catch(() => ({}));
+                    showToast(err.detail || t('app.ai_fill_failed'), 'error');
                   }
-                } catch {}
+                } catch {
+                  showToast(t('app.ai_fill_error'), 'error');
+                }
                 setAiGenerating(false);
               }}
               disabled={aiGenerating}

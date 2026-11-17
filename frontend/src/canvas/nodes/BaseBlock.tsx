@@ -265,15 +265,60 @@ function getBlockSummary(data: BlockData): { label: string; value: string | unde
   }
 }
 
-function trunc(text: string, max: number): string {
-  if (!text) return '';
-  return text.length > max ? text.substring(0, max) + '…' : text;
+function toText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map(toText).filter(Boolean).join('、');
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    // 结构化字段（如 true_facts / fundamental_rules）常见形态：{content|fact|title|name|value}
+    const preferred = obj.content ?? obj.fact ?? obj.title ?? obj.name ?? obj.value ?? obj.description;
+    if (preferred !== undefined) return toText(preferred);
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  return String(value);
+}
+
+function trunc(text: unknown, max: number): string {
+  const value = toText(text);
+  if (!value) return '';
+  return value.length > max ? value.substring(0, max) + '…' : value;
+}
+
+class BlockErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('Block render error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="block-node" style={{ borderColor: '#E74C3C', padding: 8, fontSize: 12, color: '#E74C3C' }}>
+          块内容无法渲染
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const BaseBlock: React.FC<NodeProps<BlockData>> = ({ data, selected }) => {
   const color = data.color || BLOCK_COLORS[data.type] || '#999';
   const completeness = data.completeness || 0;
-  const title = getBlockTitle(data);
+  const title = toText(getBlockTitle(data));
   const summary = getBlockSummary(data);
   const tooltip = `${t(`block.${data.type}`)} | ${t('editor.completeness')}: ${Math.round(completeness * 100)}% | ${title}`;
 
@@ -303,7 +348,7 @@ const BaseBlock: React.FC<NodeProps<BlockData>> = ({ data, selected }) => {
           {summary.map((item, i) => (
             <div key={i} style={{ display: 'flex', gap: 4, lineHeight: 1.6 }}>
               <span style={{ color: color, opacity: 0.7, flexShrink: 0, fontSize: 10 }}>{item.label}:</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value || '?'}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{toText(item.value) || '?'}</span>
             </div>
           ))}
         </div>
@@ -314,4 +359,10 @@ const BaseBlock: React.FC<NodeProps<BlockData>> = ({ data, selected }) => {
   );
 };
 
-export default BaseBlock;
+const BaseBlockWithBoundary: React.FC<NodeProps<BlockData>> = (props) => (
+  <BlockErrorBoundary>
+    <BaseBlock {...props} />
+  </BlockErrorBoundary>
+);
+
+export default BaseBlockWithBoundary;

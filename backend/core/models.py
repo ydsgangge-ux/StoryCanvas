@@ -100,6 +100,10 @@ class GenerateOutlineRequest(BaseModel):
     language: str = "zh"  # 生成输出语言：zh / en
 
 
+class SaveOutlineRequest(BaseModel):
+    outline: str = ""
+
+
 class GenerateContentRequest(BaseModel):
     chapter_num: int
     outline_confirmed: bool = True

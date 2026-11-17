@@ -209,6 +209,8 @@ const en: Record<string, string> = {
   'writing.style_saved': 'Writing style saved',
   'writing.default_option': '(Default)',
   'writing.save_content': 'Save Content',
+  'writing.save_outline': 'Save Outline',
+  'writing.outline_saved': 'Outline saved',
   'writing.run_audit_btn': 'Run Audit',
   'writing.generating': 'Generating...',
   'writing.no_summary': 'No summary',

@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from backend.core.database import get_connection
-from backend.core.models import GenerateOutlineRequest, GenerateContentRequest, GenerateBlockContentRequest, RewriteContentRequest
+from backend.core.models import GenerateOutlineRequest, GenerateContentRequest, GenerateBlockContentRequest, RewriteContentRequest, SaveOutlineRequest
 from backend.narrative.aggregator import ContextAggregator
 from backend.pipeline.architect import run as architect_run
 from backend.pipeline.writer import stream as writer_stream
@@ -127,22 +127,41 @@ OUTLINE_PROMPT_TEMPLATE = """你是一个资深叙事策划师。根据以下画
 ## 世界背景
 {world_context}
 
+## 故事大纲与主题
+{story_outline}
+
+## 故事框架
+{story_framework}
+
+## 关键事件
+{key_events}
+
 ## 本章时间线
 {timeline_info}
 
 ## 本章登场角色
 {characters_with_boundaries}
 
+## 人物关系
+{relationships}
+
 ## 本章场景规划
 {scene_blocks}
 
+## 已有章节大纲
+{chapter_outline}
+
 ## 结构要求
+- 核心冲突：{conflicts}
 - 待触发的转折点：{turning_points}
 - 待回收的伏笔：{hooks_to_resolve}
 - 待埋设的铺垫：{foreshadows_to_plant}
 
 ## 情绪目标
 {emotion_target}
+
+## 特殊关联线
+{special_links}
 
 ## 风格签名
 {style_signature}
@@ -173,16 +192,23 @@ async def generate_outline(project_id: str, req: GenerateOutlineRequest):
 
     prompt = OUTLINE_PROMPT_TEMPLATE.format(
         chapter_num=req.chapter_num,
-        world_context=ctx.get("world", "无"),
+        world_context=ctx.get("world") or "无",
+        story_outline=_format_story_outline(ctx.get("story_structure", {})),
+        story_framework=_format_story_card(ctx.get("story_card_framework", {})),
+        key_events=_format_events(ctx.get("story_structure", {}).get("events", [])),
         timeline_info=_format_timelines(ctx.get("timeline", [])),
         characters_with_boundaries=_format_characters(ctx.get("characters", [])),
+        relationships=_format_relationships(ctx.get("relationships", [])),
         scene_blocks=_format_scene_blocks(ctx.get("structure", {}).get("scenes", [])),
-        turning_points="无",
-        hooks_to_resolve=", ".join(ctx.get("structure", {}).get("hooks_to_resolve", [])) or "无",
-        foreshadows_to_plant="无",
-        emotion_target=ctx.get("expression", "无"),
-        style_signature=ctx.get("style_signature", "无标准风格"),
-        recent_summaries=ctx.get("history", "无"),
+        chapter_outline=_format_chapter_outline(ctx.get("structure", {}).get("chapter_outline", {})),
+        conflicts=_format_conflicts(ctx.get("structure", {}).get("conflicts", [])),
+        turning_points=_format_turning_points(ctx.get("structure", {}).get("turning_points", [])),
+        hooks_to_resolve=_format_hooks(ctx.get("structure", {}).get("hooks_to_resolve", [])),
+        foreshadows_to_plant=_format_hooks(ctx.get("structure", {}).get("foreshadows_to_plant", [])),
+        emotion_target=_format_expression(ctx.get("expression", [])),
+        special_links=_format_links(ctx.get("special_links", [])),
+        style_signature=ctx.get("style_signature") or "无标准风格",
+        recent_summaries=ctx.get("history") or "无",
     )
 
     if req.additional_instructions:
@@ -192,17 +218,59 @@ async def generate_outline(project_id: str, req: GenerateOutlineRequest):
         yield {"data": json.dumps({"event": "stage", "data": {"stage": "outlining", "msg": "正在生成章节细纲..."}})}
         llm = create_llm()
         outline_text = ""
-        async for chunk in llm.chat_stream(
-            _with_output_language("你是一个专业的叙事策划师，擅长生成详细的章节细纲。", req.language),
-            prompt,
-            temperature=0.7
-        ):
-            outline_text += chunk
-            yield {"data": json.dumps({"event": "chunk", "data": {"text": chunk}})}
+        try:
+            async for chunk in llm.chat_stream(
+                _with_output_language("你是一个专业的叙事策划师，擅长生成详细的章节细纲。", req.language),
+                prompt,
+                temperature=0.7
+            ):
+                outline_text += chunk
+                yield {"data": json.dumps({"event": "chunk", "data": {"text": chunk}})}
+        except Exception as e:
+            yield {"data": json.dumps({"event": "error", "data": {"msg": f"细纲生成失败: {str(e)}"}})}
+            return
+
+        # 细纲写回 chapters.outline，否则「细纲 → 正文」链路断裂
+        save_chapter_outline_text(project_id, req.chapter_num, outline_text)
 
         yield {"data": json.dumps({"event": "done", "data": {"outline": outline_text, "chapter_num": req.chapter_num}})}
 
     return EventSourceResponse(event_stream())
+
+
+def save_chapter_outline_text(project_id: str, chapter_num: int, outline: str) -> None:
+    """保存章节细纲到 chapters.outline（不存在则创建记录）"""
+    conn = get_connection()
+    try:
+        existing = conn.execute(
+            "SELECT id FROM chapters WHERE project_id = ? AND chapter_num = ?",
+            (project_id, chapter_num)
+        ).fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE chapters SET outline = ?, updated_at = datetime('now') WHERE id = ?",
+                (outline, existing["id"])
+            )
+        else:
+            conn.execute(
+                "INSERT INTO chapters (id, project_id, chapter_num, outline, status) VALUES (?, ?, ?, ?, 'planned')",
+                (str(uuid.uuid4()), project_id, chapter_num, outline)
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@router.post("/api/projects/{project_id}/chapters/{chapter_num}/outline")
+def save_chapter_outline(project_id: str, chapter_num: int, req: SaveOutlineRequest):
+    """保存用户编辑后的章节细纲"""
+    conn = get_connection()
+    project = conn.execute("SELECT id FROM projects WHERE id = ?", (project_id,)).fetchone()
+    conn.close()
+    if not project:
+        raise HTTPException(404, "项目不存在")
+    save_chapter_outline_text(project_id, chapter_num, req.outline)
+    return {"message": "细纲已保存", "chapter_num": chapter_num}
 
 
 @router.get("/api/projects/{project_id}/chapters/{chapter_num}")
@@ -268,13 +336,27 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
             (req.block_id, project_id)
         ).fetchone()
         if detail_block and detail_block["type"] == "CHAPTER_DETAIL":
-            content = json.loads(detail_block["content"] or "{}")
+            try:
+                content = json.loads(detail_block["content"] or "{}")
+            except json.JSONDecodeError:
+                content = {}
+            if not isinstance(content, dict):
+                content = {}
             scenes = []
             for i in range(1, 4):
                 heading = content.get(f"scene{i}_heading", "")
                 body = content.get(f"scene{i}_content", "")
                 if heading or body:
                     scenes.append(f"【场景{i}】{heading}\n{body}")
+            # 细纲里的冲突/角色目标/写作提示也一并交给建筑师，避免信息丢失
+            for key, label in (
+                ("key_conflicts", "关键冲突"),
+                ("character_goals", "角色目标"),
+                ("writing_notes", "写作提示"),
+            ):
+                value = content.get(key)
+                if value:
+                    scenes.append(f"【{label}】{value}")
             outline = "\n\n".join(scenes) if scenes else None
 
     # 如果没有 CHAPTER_DETAIL 块内容，回退到 chapters.outline
@@ -283,7 +365,47 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
             "SELECT * FROM chapters WHERE project_id = ? AND chapter_num = ?",
             (project_id, req.chapter_num)
         ).fetchone()
-        outline = chapter["outline"] if chapter and chapter["outline"] else "(无细纲，直接生成)"
+        outline = chapter["outline"] if chapter and chapter["outline"] else None
+
+    # 最后回退到画布上的本章章节大纲块（CHAPTER_OUTLINE）
+    if not outline:
+        outline_blocks = conn.execute(
+            """SELECT content FROM blocks
+               WHERE project_id = ? AND type = 'CHAPTER_OUTLINE' AND is_draft = 0
+               ORDER BY created_at""",
+            (project_id,)
+        ).fetchall()
+        for row in outline_blocks:
+            try:
+                o_content = json.loads(row["content"] or "{}")
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(o_content, dict):
+                continue
+            try:
+                number = int(o_content.get("chapter_number", 0))
+            except (ValueError, TypeError):
+                continue
+            if number != req.chapter_num:
+                continue
+            parts = []
+            for key, label in (
+                ("summary", "概要"),
+                ("narrative_goal", "叙事目标"),
+                ("dramatic_function", "戏剧功能"),
+                ("emotional_arc", "情感曲线"),
+            ):
+                if o_content.get(key):
+                    parts.append(f"【{label}】{o_content[key]}")
+            for i in range(1, 4):
+                if o_content.get(f"beat{i}_desc"):
+                    parts.append(f"【节拍{i}】{o_content[f'beat{i}_desc']}")
+            if parts:
+                outline = "\n\n".join(parts)
+                break
+
+    if not outline:
+        outline = "(无细纲，直接生成)"
 
     conn.close()
 
@@ -318,8 +440,20 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
         validator = InformationValidator()
         char_boundaries = {}
         for c in ctx.get("characters", []):
-            char_boundaries[c.get("id", "")] = {"doesnt_know": []}
+            boundary = c.get("knowledge_boundary") or {}
+            doesnt_know = []
+            for item in boundary.get("wrongly_believes") or []:
+                if isinstance(item, dict):
+                    doesnt_know.append(item.get("belief") or item.get("info") or "")
+                elif isinstance(item, str) and item:
+                    doesnt_know.append(item)
+            char_boundaries[c.get("id", "")] = {
+                "doesnt_know": [x for x in doesnt_know if x],
+                "name": c.get("name", ""),
+            }
         violations = validator.validate(content_only, char_boundaries)
+        for v in violations:
+            v["character_name"] = char_boundaries.get(v.get("character", ""), {}).get("name", "")
         if violations:
             yield {"data": json.dumps({"event": "warning", "data": {"violations": violations}})}
 
@@ -334,11 +468,13 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
 
         # ⑤ 修订（如有严重问题，最多2轮）
         final_content = content_only
+        revised_raw = ""
         if not audit.get("passed", True) and audit.get("has_critical_issues", False):
             yield {"data": json.dumps({"event": "stage", "data": {"stage": "revising", "msg": "修订者修复中..."}})}
             for attempt in range(settings.max_retries):
                 try:
                     revised = await revisor_run(final_content, audit.get("result", ""), ctx, language=req.language)
+                    revised_raw = revised
                     final_content = extract_content(revised)
                     re_audit = await auditor_run(final_content, ctx)
                     if re_audit.get("passed", True):
@@ -365,6 +501,25 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
                 (chapter_id, project_id, req.chapter_num, final_content, word_count)
             )
 
+        # 同步章节大纲块状态，保持「大纲 → 细纲 → 正文」可追踪
+        outline_blocks = conn2.execute(
+            "SELECT id, content FROM blocks WHERE project_id = ? AND type = 'CHAPTER_OUTLINE' AND is_draft = 0",
+            (project_id,)
+        ).fetchall()
+        for row in outline_blocks:
+            try:
+                o_content = json.loads(row["content"] or "{}")
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(o_content, dict):
+                continue
+            if str(o_content.get("chapter_number", "")) == str(req.chapter_num):
+                o_content["status"] = "written"
+                conn2.execute(
+                    "UPDATE blocks SET content = ?, updated_at = datetime('now') WHERE id = ?",
+                    (json.dumps(o_content, ensure_ascii=False), row["id"])
+                )
+
         conn2.commit()
 
         # 触发经验标记：has_generated_chapter
@@ -374,9 +529,9 @@ async def generate_chapter_content(project_id: str, req: GenerateContentRequest)
         except Exception:
             pass
 
-        # ⑤ 回写器
+        # ⑤ 回写器（用含结算表的原始文本，正文本身已剥离结算表）
         writeback = WritebackService()
-        wb_result = writeback.writeback(project_id, req.chapter_num, final_content)
+        wb_result = writeback.writeback(project_id, req.chapter_num, revised_raw or chapter_content)
         conn2.close()
 
         yield {"data": json.dumps({"event": "done", "data": {"chapter_num": req.chapter_num, "word_count": word_count, "writeback": wb_result, "chapter_content": final_content}})}
@@ -407,7 +562,7 @@ async def rewrite_content(project_id: str, req: RewriteContentRequest):
 
     is_segment = bool(req.selected_text)
 
-    prompt_parts = [f"## 当前正文（第{req.chapter_num}章）\n{full_text}"] if not is_segment else []
+    prompt_parts = []
 
     if is_segment:
         system_prompt = "你是一位专业的小说修订者。根据用户要求修改指定的文本段落。"
@@ -460,7 +615,17 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
         raise HTTPException(404, "块不存在")
 
     block_type = block["type"]
-    existing_content = json.loads(block["content"] or "{}")
+    try:
+        existing_content = json.loads(block["content"] or "{}")
+    except json.JSONDecodeError:
+        existing_content = {}
+    if not isinstance(existing_content, dict):
+        existing_content = {"value": existing_content}
+
+    roster_rows = conn.execute(
+        "SELECT id, type, content FROM blocks WHERE project_id = ? AND type IN ('CHARACTER', 'FACTION') ORDER BY created_at, id",
+        (project_id,)
+    ).fetchall()
 
     # 查询连出/连入的块
     connected_blocks = _get_connected_blocks(conn, req.block_id, project_id)
@@ -471,50 +636,99 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
     if connected_blocks:
         conn_parts = []
         for cb in connected_blocks:
+            direction = "本块 → 该块" if cb.get("direction") == "out" else "该块 → 本块"
             conn_parts.append(
-                f"[{cb['conn_type']}] ←→ {cb['type']}块「{cb['title']}」:\n{cb['content_summary']}"
+                f"[{cb['conn_type']} / {direction}] {cb['type']}块「{cb['title']}」:\n{cb['content_summary']}"
             )
         conn_context = "## 连线关联的块\n" + "\n\n".join(conn_parts)
 
-    # 构建各个字段的生成提示
-    from backend.narrative.progress import COMPLETENESS_RULES
-    rules = COMPLETENESS_RULES.get(block_type, {})
+    # 需要填写角色/势力ID的块，提供真实ID清单，避免生成无效关联
+    roster_context = ""
+    ID_REFERENCE_BLOCKS = {
+        "INFORMATION_BOUNDARY", "RELATIONSHIP", "ACTION_LINE", "DIALOGUE",
+        "CURRENT_STATE", "GROWTH", "FACTION_RELATION", "ATTITUDE",
+    }
+    if block_type in ID_REFERENCE_BLOCKS and roster_rows:
+        roster_lines = []
+        for row in roster_rows:
+            try:
+                roster_content = json.loads(row["content"] or "{}")
+            except json.JSONDecodeError:
+                roster_content = {}
+            if not isinstance(roster_content, dict):
+                roster_content = {}
+            name = roster_content.get("name") or roster_content.get("world_name") or "未命名"
+            roster_lines.append(f"- {row['type']}「{name}」 id: {row['id']}")
+        roster_context = (
+            "## 可引用的角色/势力ID（character_id / party_a_id / party_b_id 等字段必须使用这里的ID）\n"
+            + "\n".join(roster_lines)
+        )
 
-    # 确定要生成的字段（已填的跳过）
-    fields_to_generate = {k: v for k, v in rules.items() if not existing_content.get(k)}
+    # 构建各个字段的生成提示
+    from backend.narrative.progress import (
+        COMPLETENESS_RULES, EXTRA_AI_FIELDS, AI_FILL_EXCLUDED_FIELDS, STRUCTURED_FIELD_HINTS,
+    )
+    rules = dict(COMPLETENESS_RULES.get(block_type, {}))
+    # 编辑器可填但未计入完整度权重的字段也要一并补全
+    for extra_field in EXTRA_AI_FIELDS.get(block_type, []):
+        rules.setdefault(extra_field, 0.0)
+    excluded_fields = AI_FILL_EXCLUDED_FIELDS.get(block_type, set())
+
+    # 确定要生成的字段（已填的跳过；指定 field 时只补该字段）
+    if req.field and req.field != "all":
+        fields_to_generate = {} if existing_content.get(req.field) else {req.field: rules.get(req.field, 0.0)}
+    else:
+        fields_to_generate = {
+            k: v for k, v in rules.items()
+            if k not in excluded_fields and not existing_content.get(k)
+        }
+
+    if not fields_to_generate:
+        return {
+            "block_id": req.block_id,
+            "block_type": block_type,
+            "generated_fields": {},
+            "merged_content": existing_content,
+            "connections_used": len(connected_blocks),
+            "message": "该块已填充完整，无需生成",
+        }
 
     llm = create_llm()
     system_prompt = _with_output_language(f"""你是一位资深叙事设计师。根据已有信息和关联块，为{block_type}类型块生成内容。
 直接输出JSON对象，不要解释，不要加markdown标记。JSON键名必须严格匹配指定字段。""", req.language)
 
+    hint_lines = [
+        f"- {field_name}: {STRUCTURED_FIELD_HINTS[field_name]}"
+        for field_name in fields_to_generate
+        if field_name in STRUCTURED_FIELD_HINTS
+    ]
+
     user_prompt_parts = [
         f"## 目标块类型: {block_type}",
         f"## 已有内容: {json.dumps(existing_content, ensure_ascii=False, indent=2)}" if existing_content else "",
         conn_context,
+        roster_context,
         f"## 需要填充的字段及其权重(越高越重要)",
-        *[f"- {field_name} (权重{weight:.0%})" for field_name, weight in fields_to_generate.items()],
+        *[
+            f"- {field_name}" + (f" (权重{weight:.0%})" if weight else "")
+            for field_name, weight in fields_to_generate.items()
+        ],
     ]
+    if hint_lines:
+        user_prompt_parts.append("## 字段格式要求\n" + "\n".join(hint_lines))
     if req.hint:
         user_prompt_parts.append(f"## 用户提示: {req.hint}")
 
-    user_prompt_parts.append(f'\n请生成包含以下字段的JSON: {{{", ".join(f'"{k}": "生成的内容"'.format(k=k) for k in fields_to_generate.keys())}}}')
+    field_template = ", ".join(f'"{k}": "..."' for k in fields_to_generate)
+    user_prompt_parts.append(f"\n请生成包含以下字段的JSON: {{{field_template}}}")
     user_prompt = "\n".join(p for p in user_prompt_parts if p)
 
     result = await llm.chat(system_prompt, user_prompt, temperature=0.7)
 
     # 解析JSON结果
-    result = result.strip()
-    if result.startswith("```"):
-        result = result.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-    if result.startswith("```json"):
-        result = result[7:].rsplit("```", 1)[0].strip()
+    generated = _parse_block_content_result(result, list(fields_to_generate.keys()))
 
-    try:
-        generated = json.loads(result)
-    except json.JSONDecodeError:
-        generated = _parse_llm_json(result, fields_to_generate)
-
-    # 合并到已有内容
+    # 只接受本次要补的字段，避免覆盖用户已填内容
     merged = {**existing_content, **generated}
 
     return {
@@ -526,6 +740,87 @@ async def generate_block_content(project_id: str, req: GenerateBlockContentReque
     }
 
 
+def _parse_block_content_result(result: str, target_fields: list) -> dict:
+    """解析块内容生成结果，并把结构化字段规范化为预期结构"""
+    result = (result or "").strip()
+    if result.startswith("```"):
+        result = result.split("\n", 1)[1] if "\n" in result else ""
+        if result.endswith("```"):
+            result = result[:-3]
+        result = result.strip()
+        if result.startswith("json"):
+            result = result[4:].strip()
+
+    parsed = None
+    try:
+        parsed = json.loads(result)
+    except json.JSONDecodeError:
+        parsed = _parse_llm_json(result, {k: None for k in target_fields})
+
+    if not isinstance(parsed, dict):
+        parsed = {}
+
+    generated = {}
+    for key in target_fields:
+        if key not in parsed:
+            continue
+        value = parsed[key]
+        if value in (None, "", [], {}):
+            continue
+        generated[key] = _normalize_block_field(key, value)
+    return generated
+
+
+# 需要数组结构的关键字段（LLM 有时返回扁平字符串，直接存会破坏后续聚合）
+LIST_TEXT_FIELDS = {
+    "fundamental_rules", "confirmed_knowledge", "wrongly_believes",
+    "pov_characters", "peak_points", "valley_points",
+}
+DICT_LIST_FIELDS = {
+    "true_facts": "content",
+    "reader_reveal_plan": "reveal",
+}
+
+
+def _normalize_block_field(field: str, value):
+    """把字符串形式的数组字段转换为数组，保证结构正确"""
+    if field in LIST_TEXT_FIELDS:
+        if isinstance(value, list):
+            return [v if isinstance(v, str) else json.dumps(v, ensure_ascii=False) for v in value]
+        if isinstance(value, str):
+            text = value.strip()
+            parsed = None
+            if text.startswith("["):
+                try:
+                    parsed = json.loads(text)
+                except json.JSONDecodeError:
+                    parsed = None
+            if isinstance(parsed, list):
+                return [v if isinstance(v, str) else json.dumps(v, ensure_ascii=False) for v in parsed]
+            parts = [p.strip(" -•\t") for p in re.split(r"[\n；;、]+", text) if p.strip(" -•\t")]
+            return parts
+        return value
+
+    if field in DICT_LIST_FIELDS:
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            text = value.strip()
+            parsed = None
+            if text.startswith("["):
+                try:
+                    parsed = json.loads(text)
+                except json.JSONDecodeError:
+                    parsed = None
+            if isinstance(parsed, list):
+                return parsed
+            parts = [p.strip(" -•\t") for p in re.split(r"[\n；;]+", text) if p.strip(" -•\t")]
+            return [{DICT_LIST_FIELDS[field]: p} for p in parts]
+        return value
+
+    return value
+
+
 def _get_connected_blocks(conn, block_id: str, project_id: str) -> list:
     """获取与指定块有连线关系的所有块及其连线类型"""
     rows = conn.execute(
@@ -533,43 +828,67 @@ def _get_connected_blocks(conn, block_id: str, project_id: str) -> list:
            FROM connections c
            JOIN blocks b ON (b.id = CASE WHEN c.from_block = ? THEN c.to_block ELSE c.from_block END)
            WHERE c.project_id = ? AND (c.from_block = ? OR c.to_block = ?)
-           AND b.id != ?""",
+           AND b.id != ?
+           ORDER BY c.created_at""",
         (block_id, project_id, block_id, block_id, block_id)
     ).fetchall()
 
+    from backend.narrative.translator import block_to_context
+
     result = []
+    seen = set()
     for r in rows:
-        content = json.loads(r["content"] or "{}")
-        title = ""
+        # 同一对块可能有多条不同类型的连线，按「对方块 + 连线类型」去重
+        key = (r["other_id"], r["conn_type"])
+        if key in seen:
+            continue
+        seen.add(key)
+        if len(result) >= 12:  # 避免上下文过长挤占正文生成
+            break
 
-        # 提取不同类型块的标题
-        if r["type"] == "CHARACTER":
-            title = content.get("name", "未命名角色")
-        elif r["type"] == "SCENE":
-            title = content.get("title", "未命名场景")
-        elif r["type"] in ("EVENT", "HOOK", "CONFLICT", "TURNING_POINT", "FORESHADOW", "SURPRISE"):
-            title = content.get("title", "")
-        elif r["type"] == "WORLDVIEW":
-            title = content.get("world_name", "")
-        elif r["type"] == "FACTION":
-            title = content.get("name", "")
-        elif r["type"] == "GOAL":
-            title = content.get("surface_goal", "")
-        elif r["type"] == "STORYBOARD":
-            title = content.get("title", "分镜头脚本")
-        else:
-            title = r["type"]
+        try:
+            content = json.loads(r["content"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            content = {}
+        if not isinstance(content, dict):
+            content = {"value": content}
 
-        # 提取关键内容摘要
-        summary = json.dumps({k: v for k, v in content.items() if v}, ensure_ascii=False)[:200]
+        # 优先用统一的块转文本逻辑，避免 json.dumps 截断出半截 JSON
+        try:
+            summary = block_to_context({"type": r["type"], "content": content})
+        except Exception:
+            summary = json.dumps(content, ensure_ascii=False)
+        summary = (summary or "").strip()
+        if len(summary) > 400:
+            summary = summary[:400] + "…"
 
         result.append({
             "conn_type": r["conn_type"],
             "type": r["type"],
-            "title": title,
+            "title": _block_title(r["type"], content),
+            "direction": "out" if r["from_block"] == block_id else "in",
             "content_summary": summary,
         })
     return result
+
+
+def _block_title(block_type: str, content: dict) -> str:
+    """提取不同类型块的标题"""
+    if block_type == "CHARACTER":
+        return content.get("name", "未命名角色")
+    if block_type == "SCENE":
+        return content.get("title", "未命名场景")
+    if block_type in ("EVENT", "HOOK", "CONFLICT", "TURNING_POINT", "FORESHADOW", "SURPRISE"):
+        return content.get("title", "")
+    if block_type == "WORLDVIEW":
+        return content.get("world_name", "")
+    if block_type == "FACTION":
+        return content.get("name", "")
+    if block_type == "GOAL":
+        return content.get("surface_goal", "")
+    if block_type == "STORYBOARD":
+        return content.get("title", "分镜头脚本")
+    return block_type
 
 
 @router.post("/api/projects/{project_id}/generate/suggest-blocks")
@@ -798,6 +1117,75 @@ def _format_timelines(timelines: list) -> str:
     if not timelines:
         return "无"
     return "\n".join(f"- {t['name']} ({t['type']})" for t in timelines)
+
+
+def _format_hooks(hooks: list) -> str:
+    """把伏笔字典列表格式化为文本（不能直接 join，元素是 dict）"""
+    if not hooks:
+        return "无"
+    lines = []
+    for h in hooks:
+        if isinstance(h, dict):
+            title = h.get("title") or h.get("content_planted") or "未命名伏笔"
+            payoff = h.get("payoff_chapter")
+            urgency = h.get("urgency")
+            extra = []
+            if payoff not in (None, ""):
+                extra.append(f"计划第{payoff}章回收")
+            if urgency:
+                extra.append(str(urgency))
+            suffix = f"（{'，'.join(extra)}）" if extra else ""
+            hint = h.get("hint_content") or h.get("content_planted")
+            hint_text = f"\n  提示内容: {hint}" if hint else ""
+            lines.append(f"- {title}{suffix}{hint_text}")
+        else:
+            lines.append(f"- {h}")
+    return "\n".join(lines)
+
+
+def _format_expression(expression) -> str:
+    """格式化情绪/节奏指令（可能是列表或字典）"""
+    if not expression:
+        return "无"
+    if isinstance(expression, str):
+        return expression
+    if isinstance(expression, dict):
+        parts = []
+        for key, value in expression.items():
+            if not value:
+                continue
+            if isinstance(value, list):
+                sub = "；".join(
+                    ", ".join(f"{k}: {v}" for k, v in item.items() if v) if isinstance(item, dict) else str(item)
+                    for item in value
+                )
+                parts.append(f"{key}: {sub}")
+            elif isinstance(value, dict):
+                parts.append(f"{key}: " + ", ".join(f"{k}: {v}" for k, v in value.items() if v))
+            else:
+                parts.append(f"{key}: {value}")
+        return "\n".join(parts) or "无"
+    if not isinstance(expression, list):
+        return str(expression)
+    parts = []
+    for item in expression:
+        if isinstance(item, dict):
+            parts.append(", ".join(f"{k}: {v}" for k, v in item.items() if v))
+        else:
+            parts.append(str(item))
+    return "\n".join(p for p in parts if p) or "无"
+
+
+def _format_links(links: list) -> str:
+    if not links:
+        return "无"
+    parts = []
+    for link in links:
+        if isinstance(link, dict):
+            parts.append(", ".join(f"{k}: {v}" for k, v in link.items() if v))
+        else:
+            parts.append(str(link))
+    return "\n".join(p for p in parts if p) or "无"
 
 
 @router.post("/api/projects/{project_id}/generate/storyboard/{chapter_num}")
@@ -1133,12 +1521,45 @@ def _infer_music_suggestion(style_sig: dict) -> str:
     return f"配合基调({','.join(tone) if isinstance(tone, list) else tone})设计配乐情绪线，注意情绪转折点的音乐变化"
 
 
+def _join_items(values) -> str:
+    """拼接列表字段，元素是 dict 时取可读文本"""
+    parts = []
+    for v in values or []:
+        if isinstance(v, dict):
+            parts.append(str(v.get("info") or v.get("content") or v.get("belief") or v))
+        elif v not in (None, ""):
+            parts.append(str(v))
+    return "；".join(parts)
+
+
 def _format_characters(characters: list) -> str:
     if not characters:
         return "无"
     parts = []
     for c in characters:
-        parts.append(f"- {c.get('name', '未知')}: 想要 {c.get('want', '?')}，需要 {c.get('need', '?')}")
+        line = f"- {c.get('name', '未知')}: 想要 {c.get('want') or '?'}，需要 {c.get('need') or '?'}"
+        if c.get("fatal_flaw"):
+            line += f"，致命缺陷 {c['fatal_flaw']}"
+        if c.get("role_archetype"):
+            line += f"，定位 {c['role_archetype']}"
+        surface = c.get("surface_personality")
+        if surface:
+            line += f"，表层性格 {'、'.join(map(str, surface)) if isinstance(surface, (list, tuple)) else surface}"
+        lock = c.get("behavior_lock")
+        if lock:
+            line += f"，行为锁 {'、'.join(map(str, lock)) if isinstance(lock, (list, tuple)) else lock}"
+        if c.get("appearance"):
+            line += f"\n  外貌: {c['appearance']}"
+        if c.get("voice_style"):
+            line += f"\n  说话风格: {c['voice_style']}"
+        boundary = c.get("knowledge_boundary") or {}
+        knows = boundary.get("knows") or []
+        if knows:
+            line += f"\n  已知信息: {_join_items(knows)}"
+        wrong = boundary.get("wrongly_believes") or []
+        if wrong:
+            line += f"\n  误信信息: {_join_items(wrong)}"
+        parts.append(line)
     return "\n".join(parts)
 
 
@@ -1147,8 +1568,136 @@ def _format_scene_blocks(scenes: list) -> str:
         return "无"
     parts = []
     for s in scenes:
-        parts.append(f"- {s.get('title', '未命名')}: {s.get('scene_goal', '?')}")
+        parts.append(
+            f"- {s.get('title', '未命名')}: {s.get('goal') or s.get('scene_goal') or '?'}"
+            + (f"（场景类型: {s['scene_type']}）" if s.get("scene_type") else "")
+            + (f"\n  出场角色: {s['characters_present']}" if s.get("characters_present") else "")
+            + (f"\n  发生事件: {s['what_happens']}" if s.get("what_happens") else "")
+        )
     return "\n".join(parts)
+
+
+def _format_story_outline(structure: dict) -> str:
+    """格式化故事大纲、主题与简介"""
+    if not structure:
+        return "无"
+    parts = []
+    synopsis = structure.get("synopsis") or {}
+    if any(synopsis.values()):
+        parts.append(
+            f"故事简介: {synopsis.get('logline') or ''} {synopsis.get('synopsis') or ''}".strip()
+            + (f"\n类型: {synopsis['genre']}" if synopsis.get("genre") else "")
+            + (f"\n设定: {synopsis['setting']}" if synopsis.get("setting") else "")
+            + (f"\n主角: {synopsis['protagonists']}" if synopsis.get("protagonists") else "")
+            + (f"\n对手: {synopsis['antagonists']}" if synopsis.get("antagonists") else "")
+            + (f"\n情感走向: {synopsis['emotional_roadmap']}" if synopsis.get("emotional_roadmap") else "")
+        )
+    outline = structure.get("story_outline") or {}
+    if any(outline.values()):
+        acts = [f"第一幕: {outline.get('act1')}", f"第二幕: {outline.get('act2')}", f"第三幕: {outline.get('act3')}"]
+        parts.append("\n".join(a for a in acts if a.split(": ", 1)[1]))
+        for key, label in (
+            ("key_turning_points", "关键转折"),
+            ("central_conflict", "核心冲突"),
+            ("climax", "高潮设计"),
+            ("ending", "结局类型"),
+        ):
+            if outline.get(key):
+                parts.append(f"{label}: {outline[key]}")
+    theme = structure.get("theme") or {}
+    if any(theme.values()):
+        parts.append(
+            f"主题: {theme.get('theme', '')}（探讨方式: {theme.get('approach', '')}；反命题: {theme.get('counter', '')}）"
+        )
+    return "\n".join(p for p in parts if p) or "无"
+
+
+def _format_chapter_outline(outline: dict) -> str:
+    if not outline:
+        return "无"
+    parts = []
+    if outline.get("title"):
+        parts.append(f"标题: {outline['title']}")
+    for key, label in (
+        ("summary", "概要"),
+        ("narrative_goal", "叙事目标"),
+        ("dramatic_function", "戏剧功能"),
+        ("emotional_arc", "情感曲线"),
+        ("pov_character", "视角角色"),
+        ("target_words", "目标字数"),
+    ):
+        if outline.get(key):
+            parts.append(f"{label}: {outline[key]}")
+    for i, beat in enumerate(outline.get("beats") or [], 1):
+        parts.append(f"节拍{i}: {beat}")
+    return "\n".join(parts)
+
+
+def _format_story_card(framework: dict) -> str:
+    if not framework:
+        return "无"
+    parts = []
+    if framework.get("card_name"):
+        parts.append(f"框架: {framework['card_name']}")
+    if framework.get("genre"):
+        parts.append(f"类型: {framework['genre']}")
+    if framework.get("writing_modifier"):
+        parts.append(f"写作要求: {framework['writing_modifier']}")
+    if framework.get("reference_works"):
+        parts.append(f"参考作品: {framework['reference_works']}")
+    return "\n".join(parts) or "无"
+
+
+def _format_act(value) -> str:
+    """把 1 / "1" 形式的幕号转成「第1幕」，其他文本原样返回"""
+    text = str(value).strip()
+    return f"第{text}幕" if text.isdigit() else text
+
+
+def _format_events(events: list) -> str:
+    if not events:
+        return "无"
+    return "\n".join(
+        f"- {e.get('title', '未命名事件')}"
+        + (f"（类型: {_format_act(e['event_type'])}）" if e.get("event_type") else "")
+        + (f"\n  经过: {e['what_happens']}" if e.get("what_happens") else "")
+        + (f"\n  直接影响: {e['effects']}" if e.get("effects") else "")
+        for e in events
+    )
+
+
+def _format_relationships(relations: list) -> str:
+    if not relations:
+        return "无"
+    return "\n".join(
+        f"- {r.get('party_a', '?')} ↔ {r.get('party_b', '?')}: {r.get('type', '')}"
+        + (f"，关系张力 {r['intensity']}" if r.get("intensity") else "")
+        + (f"，当前动态: {r['dynamic']}" if r.get("dynamic") else "")
+        for r in relations
+    )
+
+
+def _format_conflicts(conflicts: list) -> str:
+    if not conflicts:
+        return "无"
+    return "\n".join(
+        f"- {c.get('title', '未命名冲突')}"
+        + (f"（{c['conflict_type']}）" if c.get("conflict_type") else "")
+        + (f"：{c['root_cause']}" if c.get("root_cause") else "")
+        for c in conflicts
+    )
+
+
+def _format_turning_points(points: list) -> str:
+    if not points:
+        return "无"
+    return "\n".join(
+        f"- {p.get('title', '未命名转折')}"
+        + (f"（类型: {p['turning_type']}）" if p.get("turning_type") else "")
+        + (f"：{p['trigger']}" if p.get("trigger") else "")
+        + (f" → 之后: {p['after_state']}" if p.get("after_state") else "")
+        for p in points
+    )
 
 
 def extract_content(raw: str) -> str:

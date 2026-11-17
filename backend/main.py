@@ -305,7 +305,7 @@ def export_project(project_id: str):
 
     lines = [f"# {project['title']}\n"]
     for ch in chapters:
-        lines.append(f"\n## 第{ch['chapter_num']}章 {ch.get('title', '') or ''}\n")
+        lines.append(f"\n## 第{ch['chapter_num']}章 {ch['title'] or ''}\n")
         if ch["content"]:
             lines.append(ch["content"] + "\n")
 

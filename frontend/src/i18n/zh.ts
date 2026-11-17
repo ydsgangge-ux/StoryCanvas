@@ -209,6 +209,8 @@ const zh: Record<string, string> = {
   'writing.style_saved': '写作风格已保存',
   'writing.default_option': '(默认)',
   'writing.save_content': '保存正文',
+  'writing.save_outline': '保存细纲',
+  'writing.outline_saved': '细纲已保存',
   'writing.run_audit_btn': '运行审计',
   'writing.generating': '生成中...',
   'writing.no_summary': '无摘要',

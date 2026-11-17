@@ -174,6 +174,8 @@ const WritingPanel: React.FC = () => {
       (text) => { fullContent += text; setOutput(fullContent); },
       (result) => {
         setStage(null); setIsGenerating(false);
+        // 展示最终（修订后）正文，而不是流式输出中带结算表的原始内容
+        if (result?.chapter_content) setOutput(result.chapter_content);
         showToast(t('writing.chapter_generated', { num: chapterNum, count: result.word_count }));
         loadProject(currentProject.id);
       },
@@ -360,6 +362,25 @@ const WritingPanel: React.FC = () => {
     setIsStoryboarding(false);
   };
 
+  /** 保存细纲到 chapters.outline */
+  const handleSaveOutline = async () => {
+    if (!currentProject || !output.trim()) return;
+    try {
+      const res = await fetch(`/api/projects/${currentProject.id}/chapters/${chapterNum}/outline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outline: output }),
+      });
+      if (res.ok) {
+        showToast(t('writing.outline_saved'));
+      } else {
+        showToast(t('writing.save_failed'), 'error');
+      }
+    } catch {
+      showToast(t('writing.save_error'), 'error');
+    }
+  };
+
   /** 保存正文到 chapters 表 */
   const handleSaveContent = async () => {
     if (!currentProject || !output.trim()) return;
@@ -543,6 +564,9 @@ const WritingPanel: React.FC = () => {
               <button className="btn" onClick={() => { setOutput(''); setStage(null); }} disabled={isGenerating}>{t('writing.clear')}</button>
               {output && mode === 'content' && (
                 <button className="btn btn-sm" onClick={handleSaveContent} style={{ color: '#50C878' }}>💾 {t('writing.save_content')}</button>
+              )}
+              {output && mode === 'outline' && (
+                <button className="btn btn-sm" onClick={handleSaveOutline} style={{ color: '#4A90D9' }}>💾 {t('writing.save_outline')}</button>
               )}
               {output && mode === 'content' && (
                 <button className="btn btn-sm" onClick={handleConvertStoryboard}
