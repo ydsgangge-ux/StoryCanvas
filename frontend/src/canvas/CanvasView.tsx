@@ -38,7 +38,7 @@ const CanvasView: React.FC = () => {
   const { t } = useT();
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedBlock, syncFromBlocks, saveDirtyPositions } = useCanvasStore();
   const { currentProject, blocks, connections, progress } = useProjectStore();
-  const { showToast, setShowBlockEditor, setShowWritingPanel, language } = useUIStore();
+  const { showToast, setShowBlockEditor, setShowWritingPanel, language, aiFillHints, setAiFillHint } = useUIStore();
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null);
@@ -252,7 +252,7 @@ const CanvasView: React.FC = () => {
           </div>
           <div className="context-menu-item" onClick={() => {
             const { id } = contextMenu.node;
-            setAiFillDialog({ blockId: id, hint: '' });
+            setAiFillDialog({ blockId: id, hint: aiFillHints[id] || '' });
             setContextMenu(null);
           }}>
             🤖 {t('canvas.ai_fill')}
@@ -309,7 +309,11 @@ const CanvasView: React.FC = () => {
                 className="form-textarea"
                 rows={4}
                 value={aiFillDialog.hint}
-                onChange={(e) => setAiFillDialog({ ...aiFillDialog, hint: e.target.value })}
+                onChange={(e) => {
+                  const hint = e.target.value;
+                  setAiFillDialog({ ...aiFillDialog, hint });
+                  setAiFillHint(aiFillDialog.blockId, hint);
+                }}
                 placeholder={t('canvas.ai_fill_placeholder')}
                 style={{ width: '100%', marginBottom: 12 }}
               />

@@ -131,7 +131,7 @@ const App: React.FC = () => {
           const res = await fetch(`/api/projects/${currentProject.id}/generate/block-content`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ block_id: blockId, field: 'all', hint: '', language }),
+            body: JSON.stringify({ block_id: blockId, field: 'all', hint: useUIStore.getState().aiFillHints[blockId] || '', language }),
           });
           if (res.ok) {
             const data = await res.json();

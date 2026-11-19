@@ -295,7 +295,7 @@ const FIELD_GROUPS: Record<string, { key: string; labelKey: string; type: 'text'
 
 const BlockEditor: React.FC = () => {
   const { t } = useT();
-  const { language, showToast } = useUIStore();
+  const { language, showToast, setAiFillHint } = useUIStore();
   const { selectedBlock } = useCanvasStore();
   const { currentProject, updateBlock } = useProjectStore();
   const [localContent, setLocalContent] = useState<Record<string, any>>({});
@@ -308,6 +308,10 @@ const BlockEditor: React.FC = () => {
   useEffect(() => {
     if (selectedBlock) {
       setLocalContent({ ...(selectedBlock.content || {}) });
+      // 恢复该块上次未提交的 AI 生成提示词
+      setAiHint(useUIStore.getState().aiFillHints[selectedBlock.id] || '');
+    } else {
+      setAiHint('');
     }
   }, [selectedBlock?.id]);
 
@@ -634,7 +638,11 @@ const BlockEditor: React.FC = () => {
               className="form-textarea"
               rows={2}
               value={aiHint}
-              onChange={(e) => setAiHint(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setAiHint(value);
+                setAiFillHint(selectedBlock.id, value);
+              }}
               placeholder={t('editor.ai_hint_placeholder')}
               style={{ fontSize: 12 }}
             />

@@ -40,7 +40,7 @@ class OpenAICompatibleProvider(BaseLLM):
         }
         if tool_choice is not None:
             payload["tool_choice"] = tool_choice
-        else:
+        elif tools:
             # 默认强制调用第一个工具
             payload["tool_choice"] = {"type": "function", "function": {"name": tools[0]["function"]["name"]}}
 
@@ -95,21 +95,26 @@ class OpenAICompatibleProvider(BaseLLM):
                     )
 
                 async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]":
-                            break
-                        import json
-                        try:
-                            chunk = json.loads(data)
-                            delta = chunk["choices"][0].get("delta", {})
-                            content = delta.get("content")
-                            # 部分模型（尤其是推理模型 thinking 阶段）会返回 content=None，
-                            # 不能把 None 抛给上层累加（否则 chat() 里 full_text += chunk 会崩溃）
-                            if content:
-                                yield content
-                        except (json.JSONDecodeError, KeyError):
-                            continue
+                    if not line or not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    # 部分兼容接口会在末尾返回仅含 usage 的 chunk（choices 为空），
+                    # 直接取 choices[0] 会抛 IndexError
+                    choices = chunk.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = (choices[0] or {}).get("delta") or {}
+                    content = delta.get("content")
+                    # 部分模型（尤其是推理模型 thinking 阶段）会返回 content=None，
+                    # 不能把 None 抛给上层累加（否则 chat() 里 full_text += chunk 会崩溃）
+                    if content:
+                        yield content
 
     def _provider_name(self) -> str:
         if "deepseek" in self.base_url:
